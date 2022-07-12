@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang = "en">
+<head>
+   <meta charset = "UTF-8">
+   <meta http-equiv = "X-UA-Compatible" content = "IE=edge">
+   <meta name = "viewport" content = "width=device-width, initial-scale=1.0">
+   <meta name = "author" content = "Web Developer | Shanelle Marasigan">
+   <title>
+      Sign in | Todo List
+   </title>
+
+   <link rel = "stylesheet" href = "assets/css/bootstrap.min.css">
+</head>
+<body>
+   <main class = "container-fluid vh-100">
+      <nav class = "navbar navbar-expand-lg navbar-light bg-light">
+         <div class = "container-fluid">
+            <button class = "navbar-toggler" type = "button" data-bs-toggle = "collapse" data-bs-target = "#navbar-toggler" aria-controls = "navbar-toggler" aria-expanded = "false" aria-label = "Toggle navigation">
+               <span class = "navbar-toggler-icon"></span>
+            </button>
+            <div class = "collapse navbar-collapse" id = "navbar-toggler">
+               <a class = "navbar-brand" href = "#">
+                  &#128466 Todo List
+               </a>
+            </div>
+         </div>
+      </nav>
+
+      <div class = "d-flex align-items-center justify-content-center p-2">
+         <div class = "card">
+            <div class = "card-body">
+               <h2 class = "text-center">
+                  <svg xmlns = "http://www.w3.org/2000/svg" width = "50" height = "50" fill = "currentColor" class = "bi bi-person-square" viewBox = "0 0 16 16">
+                     <path d = "M11 6a3 3 0 1 1-6 0 3 3 0 0 1 6 0z"/>
+                     <path d = "M2 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2H2zm12 1a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1v-1c0-1-1-4-6-4s-6 3-6 4v1a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h12z"/>
+                   </svg>
+               </h2>
+               <h3 class = "card-title text-center mb-3">
+                  Please sign in
+               </h3>
+               <div class = "form-floating mb-2">
+                  <input type = "text" class = "form-control" id = "floatingInput" name = "username" placeholder = "Username" aria-label = "Username">
+                  <label for = "floatingInput">
+                     Username
+                  </label>
+               </div>
+               <div class = "form-floating mb-2">
+                  <input type = "password" class = "form-control" id = "floatingInput" name = "password" placeholder = "Password" aria-label = "Password">
+                  <label for = "floatingInput">
+                     Password
+                  </label>
+               </div>
+               <div class = "my-3">
+                  Don't have an account?
+                  <button type = "button" class = "btn btn-link fw-bolder p-0" data-bs-toggle = "modal" data-bs-target = "#create-account">
+                     Create an account.
+                  </button>
+               </div>
+               <div class = "row p-3 mb-3">
+                  <button class = "btn btn-primary fw-bolder" id = "btn-sign-in">
+                     <svg xmlns = "http://www.w3.org/2000/svg" width = "20" height = "20" fill = "currentColor" class = "bi bi-box-arrow-in-right" viewBox = "0 0 16 16">
+                        <path fill-rule = "evenodd" d = "M6 3.5a.5.5 0 0 1 .5-.5h8a.5.5 0 0 1 .5.5v9a.5.5 0 0 1-.5.5h-8a.5.5 0 0 1-.5-.5v-2a.5.5 0 0 0-1 0v2A1.5 1.5 0 0 0 6.5 14h8a1.5 1.5 0 0 0 1.5-1.5v-9A1.5 1.5 0 0 0 14.5 2h-8A1.5 1.5 0 0 0 5 3.5v2a.5.5 0 0 0 1 0v-2z"/>
+                        <path fill-rule = "evenodd" d = "M11.854 8.354a.5.5 0 0 0 0-.708l-3-3a.5.5 0 1 0-.708.708L10.293 7.5H1.5a.5.5 0 0 0 0 1h8.793l-2.147 2.146a.5.5 0 0 0 .708.708l3-3z"/>
+                      </svg>
+                     SIGN IN
+                  </button>
+               </div>
+            </div>
+         </div>
+      </div>
+
+      <div class = "modal fade" id = "create-account" tabindex = "-1" aria-labelledby = "create-account-label" aria-hidden = "true">
+         <div class = "modal-dialog modal-lg">
+            <div class = "modal-content">
+               <div class = "modal-header">
+                  <h5 class = "modal-title" id = "create-account-label">
+                     Create Account
+                  </h5>
+                  <button type = "button" class = "btn-close" data-bs-dismiss = "modal" aria-label = "Close"></button>
+               </div>
+               <div class = "modal-body">
+                  <div class = "row mb-3">
+                     <div class = "col">
+                        <div class = "form-floating">
+                           <input type = "text" class = "form-control" id = "floatingInput" name = "first_name" placeholder = "First Name" aria-label = "First Name">
+                           <label for = "floatingInput">
+                              First Name
+                           </label>
+                        </div>
+                     </div>
+                     <div class = "col">
+                        <div class = "form-floating">
+                           <input type = "text" class = "form-control" id = "floatingInput" name = "last_name" placeholder = "Last Name" aria-label = "Last Name">
+                           <label for = "floatingInput">
+                              Last Name
+                           </label>
+                        </div>
+                     </div>
+                  </div>
+                  <div class = "mb-3">
+                     <div class = "form-floating">
+                        <input type = "email" class = "form-control" id = "floatingInput" name = "email" placeholder = "Email" aria-label = "Email">
+                        <label for = "floatingInput">
+                           Email
+                        </label>
+                     </div>
+                  </div>
+                  <div class = "mb-3">
+                     <div class = "form-floating">
+                        <input type = "text" class = "form-control" id = "floatingInput" name = "user_name" placeholder = "Username" aria-label = "Username">
+                        <label for = "floatingInput">
+                           Username
+                        </label>
+                     </div>
+                  </div>
+                  <div class = "mb-3">
+                     <div class = "form-floating">
+                        <input type = "password" class = "form-control" id = "floatingInput" name = "user_password" placeholder = "Password" aria-label = "Password">
+                        <label for = "floatingInput">
+                           Password
+                        </label>
+                     </div>
+                  </div>
+               </div>
+               <div class = "modal-footer">
+                  <button type = "button" class = "btn btn-primary fw-bolder" id = "btn-sign-up">
+                     <svg xmlns = "http://www.w3.org/2000/svg" width = "16" height = "16" fill = "currentColor" class = "bi bi-person-plus-fill" viewBox = "0 0 16 16">
+                        <path d = "M1 14s-1 0-1-1 1-4 6-4 6 3 6 4-1 1-1 1H1zm5-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/>
+                        <path fill-rule = "evenodd" d = "M13.5 5a.5.5 0 0 1 .5.5V7h1.5a.5.5 0 0 1 0 1H14v1.5a.5.5 0 0 1-1 0V8h-1.5a.5.5 0 0 1 0-1H13V5.5a.5.5 0 0 1 .5-.5z"/>
+                     </svg>
+                     Sign up
+                  </button>
+                  <button type = "button" class = "btn btn-secondary fw-bolder" id = "btn-create-account-cancel">
+                     Cancel
+                  </button>
+               </div>
+            </div>
+         </div>
+      </div>
+   </main>
+
+   <script src = "assets/js/bootstrap.bundle.min.js"></script>
+   <script type = "text/javascript">
+      const container = document.getElementById('create-account');
+      const modal = new bootstrap.Modal(container);
+      let URL = "https://mlffldmsn5.execute-api.us-east-1.amazonaws.com/prod/users/";
+
+      document.getElementById('btn-create-account-cancel').addEventListener("click", function ()
+      {
+         input = document.querySelector('div.modal-body').querySelectorAll('input');;
+         input.forEach(function(element)
+         {
+            element.value = '';
+         });
+         
+         modal.hide();
+      });
+
+      // SendPostRequest uses XML to create and send POST request with x-api-key.
+      // It also allows you to redirect your page if `page_redirect` is specified.
+      function SendPostRequest(data, request, page_redirect)
+      {
+         // Set-up HTTP Request
+         const xhr = new XMLHttpRequest();
+
+         // Set-up listener to process completed requests
+         xhr.onload = function (){
+            // Process our return data
+            if (xhr.status == 200)
+            {
+               modal.hide();
+               console.log(xhr.responseText);
+
+               if (page_redirect !== undefined)
+               {
+                  window.location.href = page_redirect;
+               }
+            }
+            else
+            {
+               const response = JSON.parse(xhr.responseText);
+               alert(`Error: ${response.err_msg}`);
+            }
+         };
+
+         // Create POST request
+         xhr.open('POST', `${URL}?${request}`);
+
+         // Setting Request Header
+         xhr.setRequestHeader('Content-Type', 'application/json');
+         xhr.setRequestHeader('x-api-key', 'VGhpcyBpcyBhIFZlcnkgRWFzeSBQYXNzd29yZCAyMDAl');
+
+         // Send POST
+         xhr.send(JSON.stringify(data));
+      }
+
+      document.getElementById('btn-sign-up').addEventListener("click", function ()
+      {
+         let data = {};
+         data.first_name = document.querySelector('input[name=first_name]').value;
+         data.last_name = document.querySelector('input[name=last_name]').value;
+         data.email = document.querySelector('input[name=email]').value;
+         data.username = document.querySelector('input[name=user_name]').value;
+         data.password = document.querySelector('input[name=user_password]').value;
+         console.log("Data ", data);
+         console.log("Stringify ", JSON.stringify(data));
+         SendPostRequest(data, 'type=new');
+      });
+
+      document.getElementById('btn-sign-in').addEventListener("click", function ()
+      {
+         let data = {};
+         data.username = document.querySelector('input[name=username]').value;
+         data.password = document.querySelector('input[name=password]').value;
+         SendPostRequest(data, 'type=login', 'dashboard.html');
+      });
+
+   </script>
+</body>
+</html>

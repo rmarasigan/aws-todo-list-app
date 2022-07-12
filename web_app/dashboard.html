@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang = "en">
+<head>
+   <meta charset = "UTF-8">
+   <meta http-equiv = "X-UA-Compatible" content = "IE=edge">
+   <meta name = "viewport" content = "width=device-width, initial-scale=1.0">
+   <meta name = "author" content = "Web Developer | Shanelle Marasigan">
+   <title>
+      Todo List Application
+   </title>
+
+   <link rel = "stylesheet" href = "assets/css/bootstrap.min.css">
+</head>
+<body>
+   <nav class = "navbar navbar-expand-lg navbar-light bg-light">
+      <div class = "container-fluid">
+         <button class = "navbar-toggler" type = "button" data-bs-toggle = "collapse" data-bs-target = "#navbar-toggler" aria-controls = "navbar-toggler" aria-expanded = "false" aria-label = "Toggle navigation">
+            <span class = "navbar-toggler-icon"></span>
+         </button>
+         <div class = "collapse navbar-collapse" id = "navbar-toggler">
+            <a class = "navbar-brand" href = "#">
+               &#128466 Todo List
+            </a>
+            <ul class = "navbar-nav me-auto mb-2 mb-lg-0">
+               <li class = "nav-item">
+                  <a class = "nav-link active" href = "#">
+                     List
+                  </a>
+               </li>
+            </ul>
+            <div class = "d-flex">
+               <button class = "btn btn-success">
+                 + Add New To do
+               </button>
+            </div>
+         </div>
+      </div>
+   </nav>
+
+   <main class = "container-fluid">
+      <table class = "table table-stripped">
+         <thead>
+            <tr>
+               <th scope = "col">
+                  #
+               </th>
+               <th scope = "col">
+                  User
+               </th>
+               <th scope = "col">
+                  Title
+               </th>
+               <th scope = "col">
+                  Create Date
+               </th>
+               <th></th>
+            </tr>
+         </thead>
+         <tbody>
+            <tr class = "align-middle">
+               <th scope = "row">
+                  1
+               </th>
+               <th>
+                  Jacob Smith
+               </th>
+               <th>
+                  Create Cloud-based Todo App
+               </th>
+               <th>
+                  08-04-2022
+               </th>
+               <th class = "d-flex justify-content-center">
+                  <button class = "btn btn-lg btn-primary" data-bs-toggle = "modal" data-bs-target = "#task-modal">
+                     <svg xmlns = "http://www.w3.org/2000/svg" width = "16" height = "16" fill = "currentColor" class = "bi bi-eye-fill" viewBox = "0 0 16 16">
+                        <path d = "M10.5 8a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0z"/>
+                        <path d = "M0 8s3-5.5 8-5.5S16 8 16 8s-3 5.5-8 5.5S0 8 0 8zm8 3.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z"/>
+                      </svg>
+                     View
+                  </button>
+               </th>
+            </tr>
+         </tbody>
+      </table>
+
+      <div class = "modal fade" id = "task-modal" tabindex = "-1" aria-labelledby = "task-modal-label" aria-hidden = "true">
+         <div class = "modal-dialog">
+            <div class = "modal-content">
+               <div class = "modal-header">
+                  <h5 class = "modal-title" id = "task-modal-label">
+                     Task Title
+                  </h5>
+                  <button class = "btn-close" type = "button" data-bs-dismiss = "modal" aria-label = "Close"></button>
+               </div>
+               <div class = "modal-body">
+                  Task Content Body here ...
+               </div>
+               <div class = "modal-footer">
+                  <button class = "btn btn-primary" type = "button">
+                     Save changes
+                  </button>
+                  <button class = "btn btn-secondary" type = "button" data-bs-dismiss = "modal">
+                     Close
+                  </button>
+               </div>
+            </div>
+         </div>
+      </div>
+   </main>
+
+   <script src = "assets/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
