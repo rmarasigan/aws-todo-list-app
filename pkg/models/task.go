@@ -143,7 +143,7 @@ func GetTask(ctx context.Context, task_id string, svc dynamodbiface.DynamoDBAPI)
 	if len(result.Items) == 0 {
 		logger.Info(&logger.Logs{Code: "TaskData", Message: "No data found"},
 			logger.KVP{Key: "tablename", Value: tablename})
-		return nil, errors.New("no tasks found")
+		return nil, nil
 	}
 
 	// Unmarshal it into actual task which front-end can understand as a JSON
@@ -242,7 +242,7 @@ func FetchTasks(ctx context.Context, user_id string, svc dynamodbiface.DynamoDBA
 	if len(result.Items) == 0 {
 		logger.Info(&logger.Logs{Code: "DynamoDBAPI", Message: "No data found"},
 			logger.KVP{Key: "tablename", Value: tablename})
-		return nil, errors.New("no tasks found")
+		return nil, nil
 	}
 
 	// Unmarshal a list of maps into actual task which front-end can understand as a JSON
@@ -297,7 +297,7 @@ func FilterTasks(ctx context.Context, user_id string, status int, svc dynamodbif
 	// Checks if there are items returned
 	if len(result.Items) == 0 {
 		logger.Info(&logger.Logs{Code: "DynamoDBAPI", Message: "No data found"}, logger.KVP{Key: "tablename", Value: tablename})
-		return nil, errors.New("no tasks found")
+		return nil, nil
 	}
 
 	// Unmarshal a list of maps into actual task which front-end can understand as a JSON
