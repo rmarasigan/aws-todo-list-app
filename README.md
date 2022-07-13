@@ -69,10 +69,12 @@ aws-todo-list-app
 ```
 
 ## Project Directory
+* `cmd/todoList/main.go` is our lambda handler where our function code processes the API events.
 * `lib/stacks/todo-list-stack.ts` is where your CDK application’s main stack is defined.
 * `lib/stage/todo-list-stage.ts` is where you instantiate your resource stack.
 * `lib/pipeline-stack.ts` is the initial structure of your pipeline and instantiating the `developer` and `production` stage.
 * `bin/todo-list.ts` is the entrypoint of the CDK application. It will load the stack defined in lib/todo-list-stack.ts.
+* `web_app` contains our front-end design for Todo List App that will be placed in an S3 bucket called `todo-list-app-dev`.
 * `package.json` is your npm module manifest. It includes information like the name of your app, version, dependencies and build scripts like “watch” and “build” (package-lock.json is maintained by npm)
 * `cdk.json` tells the toolkit how to run your app. In our case it will be "npx ts-node bin/todo-list.ts"
 * `tsconfig.json` your project’s typescript configuration
@@ -103,6 +105,45 @@ Program synthesis is the process of finding a program in the underlying programm
 
 ```bash
 dev@dev:~:aws-todo-list-app$ cdk synth
+Resources:
+  TodoListcustomRole78A60DC9:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+        Version: "2012-10-17"
+      ManagedPolicyArns:
+        - Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - :iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      RoleName: TodoList_customRole
+    Metadata:
+      aws:cdk:path: TodoListAppStack/TodoList_customRole/Resource
+.....
+Parameters:
+  BootstrapVersion:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /cdk-bootstrap/zep458faq/version
+    Description: Version of the CDK Bootstrap resources in this environment, automatically retrieved from SSM Parameter Store. [cdk:skip]
+Rules:
+  CheckBootstrapVersion:
+    Assertions:
+      - Assert:
+          Fn::Not:
+            - Fn::Contains:
+                - - "1"
+                  - "2"
+                  - "3"
+                  - "4"
+                  - "5"
+                - Ref: BootstrapVersion
+        AssertDescription: CDK bootstrap stack version 6 required. Please run 'cdk bootstrap' with a recent version of the CDK CLI.
 ```
 
 ## Bootstrapping
@@ -129,7 +170,7 @@ CDKToolkit: creating CloudFormation changeset...
 ****************************************************
 ```
 
-## Updgrade CDK
+### Updgrade CDK
 ```bash
 dev@dev:~:aws-todo-list-app$ npm install -g aws-cdk
 added 1 package, and audited 2 packages in 1s
@@ -151,6 +192,17 @@ dev@dev:~$ cdk deploy --profile profile_name
 
 This deployment will make potentially sensitive changes according to your current security approval level (--require-approval broadening).
 Please confirm you intend to make the following modifications:
+
+IAM Statement Changes
+┌───┬──────────────────────────────────────────────┬────────┬──────────────────────────────────────────────┬──────────────────────────────────────────────┬────────────────────────────────────────────────┐
+│   │ Resource                                     │ Effect │ Action                                       │ Principal                                    │ Condition                                      │
+├───┼──────────────────────────────────────────────┼────────┼──────────────────────────────────────────────┼──────────────────────────────────────────────┼────────────────────────────────────────────────┤
+│ + │ ${Custom::CDKBucketDeployment9351AE39958944B │ Allow  │ sts:AssumeRole                               │ Service:lambda.amazonaws.com                 │                                                │
+│   │ 45CED0CD9AC6950C/ServiceRole.Arn}            │        │                                              │                                              │                                                │
+├───┼──────────────────────────────────────────────┼────────┼──────────────────────────────────────────────┼──────────────────────────────────────────────┼────────────────────────────────────────────────┤
+│ + │ ${Custom::S3AutoDeleteObjectsCustomResourceP │ Allow  │ sts:AssumeRole                               │ Service:lambda.amazonaws.com                 │                                                │
+│   │ rovider/Role.Arn}                            │        │                                              │                                              │                                                │
+├───┼──────────────────────────────────────────────┼────────┼──────────────────────────────────────────────┼──────────────────────────────────────────────┼────────────────────────────────────────────────┤
 
 ...........
 
@@ -176,7 +228,7 @@ arn:aws:cloudformation:xx-xxxx-x:xxxxxxxxxx:stack/TodoListAppStack/xxxxxxxxxxxxx
 ✨  Total time: 110.66s
 ```
 
-## Install todo-list
+## Install aws-todo-list-app
 Run `npm install` in the root of your project and this will install all the dependencies.
 
 ```bash
@@ -193,6 +245,7 @@ found 0 vulnerabilities
 * [Bootstrap](https://www.techopedia.com/definition/3328/bootstrap)
 * [AWS CDK v2](https://docs.aws.amazon.com/cdk/api/v2/)
 * [TypeScript Workshop](https://cdkworkshop.com/20-typescript.html)
+* [CORS on API Gateway](https://enable-cors.org/server_awsapigateway.html)
 * [What is Bootstrapping?](https://www.youtube.com/watch?v=nslY1s0U9_c)
 * [AWS SDK for Go API Reference](https://docs.aws.amazon.com/sdk-for-go/api/)
 * [Getting started with the AWS CDK](https://docs.aws.amazon.com/cdk/v2/guide/getting_started.html)
