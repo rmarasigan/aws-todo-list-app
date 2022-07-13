@@ -34,7 +34,3 @@ func UnhandledMethod() (*events.APIGatewayProxyResponse, error) {
 func UnhandledRequest() (*events.APIGatewayProxyResponse, error) {
 	return Response(http.StatusBadRequest, "request not allowed")
 }
-
-func PreCorsFlight() (*events.APIGatewayProxyResponse, error) {
-	return Response(http.StatusOK, "cors pre flight")
-}
