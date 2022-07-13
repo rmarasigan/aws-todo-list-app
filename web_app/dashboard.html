@@ -55,9 +55,6 @@
          <thead>
             <tr>
                <th scope = "col">
-                  #
-               </th>
-               <th scope = "col">
                   Title
                </th>
                <th scope = "col">
@@ -72,34 +69,7 @@
                <th></th>
             </tr>
          </thead>
-         <tbody>
-            <tr class = "align-middle">
-               <th scope = "row">
-                  1
-               </th>
-               <th>
-                  Create Cloud-based Todo App
-               </th>
-               <th>
-                  Create Cloud-based Todo App
-               </th>
-               <th>
-                  In Progress
-               </th>
-               <th>
-                  08-04-2022
-               </th>
-               <th class = "d-flex justify-content-center">
-                  <button class = "btn btn-lg btn-primary" data-bs-toggle = "modal" data-bs-target = "#task-modal">
-                     <svg xmlns = "http://www.w3.org/2000/svg" width = "16" height = "16" fill = "currentColor" class = "bi bi-eye-fill" viewBox = "0 0 16 16">
-                        <path d = "M10.5 8a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0z"/>
-                        <path d = "M0 8s3-5.5 8-5.5S16 8 16 8s-3 5.5-8 5.5S0 8 0 8zm8 3.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z"/>
-                      </svg>
-                     View
-                  </button>
-               </th>
-            </tr>
-         </tbody>
+         <tbody id = "tasks-tbody"></tbody>
       </table>
 
       <!-- View task -->
@@ -113,7 +83,42 @@
                   <button class = "btn-close" type = "button" data-bs-dismiss = "modal" aria-label = "Close"></button>
                </div>
                <div class = "modal-body">
-                  Task Content Body here ...
+                  <div class = "modal-body">
+                     <div class = "mb-3">
+                        <div class = "form-floating">
+                           <input type = "text" class = "form-control" id = "floatingInput" name = "task_title" placeholder = "Title" aria-label = "Title">
+                           <label for = "floatingInput">
+                              Title
+                           </label>
+                        </div>
+                     </div>
+                     <div class = "mb-3">
+                        <div class = "form-floating">
+                           <input type = "text" class = "form-control" id = "floatingInput" name = "task_description" placeholder = "Description" aria-label = "Description">
+                           <label for = "floatingInput">
+                              Description
+                           </label>
+                        </div>
+                     </div>
+                     <div class = "row mb3">
+                        <div class = "col">
+                           <div class = "form-floating">
+                              <input type = "text" class = "form-control" id = "floatingInput" name = "task_status" placeholder = "Status" aria-label = "Status">
+                              <label for = "floatingInput">
+                                 Status
+                              </label>
+                           </div>
+                        </div>
+                        <div class = "col">
+                           <div class = "form-floating">
+                              <input type = "text" class = "form-control" id = "floatingInput" name = "task_date_created" placeholder = "Date Created" aria-label = "Date Created">
+                              <label for = "floatingInput">
+                                 Date Created
+                              </label>
+                           </div>
+                        </div>
+                     </div>
+                  </div>
                </div>
                <div class = "modal-footer">
                   <button class = "btn btn-primary" type = "button">
@@ -187,16 +192,62 @@
    </main>
    <script src = "assets/js/bootstrap.bundle.min.js"></script>
    <script>
+      // Set-up HTTP Request
+      const xhr = new XMLHttpRequest();
       // Retrieve the object from local storage
       const API_KEY = localStorage.getItem('key');
       let user = JSON.parse(localStorage.getItem('user'));
-      let URL = "https://xxxxxxxxxx.xxxxxxx.xx.xxxx.x.amazonaws.com/deployment_stage/users/";
+
+      // API URL
+      let TASK_URL = "https://xxxxxxxxxx.xxxxxxx.xx.xxxx.x.amazonaws.com/deployment_stage/tasks/";
+      let USER_URL = "https://xxxxxxxxxx.xxxxxxx.xx.xxxx.x.amazonaws.com/deployment_stage/users/";
 
       // Set values to user input
       document.querySelector('input[name=first_name]').value = user.first_name;
       document.querySelector('input[name=last_name]').value = user.last_name;
       document.querySelector('input[name=email]').value = user.email;
       document.querySelector('input[name=user_name]').value = user.username;
+      
+      xhr.onload = function (){
+         let response = JSON.parse(xhr.responseText);
+
+         // Process our tasks return data
+         if (xhr.status == 200)
+         {
+            let tbody = document.getElementById('tasks-tbody');
+            for (const [key, value] of Object.entries(response))
+            {
+               // Build elements that will be added to the innerHTML of our tbody
+               let content = `<tr class = 'align-middle'>
+                                 <th scope = 'row'>${value.title}</th>
+                                 <th>${value.description}</th>
+                                 <th>${value.status}</th>
+                                 <th>${value.date_created}</th>
+                                 <th class = 'd-flex justify-content-center'>
+                                    <button class = 'btn btn-lg btn-primary' data-bs-toggle = 'modal' data-bs-target = '#task-modal'  task-id = '${value.id}'>
+                                       <svg xmlns = 'http://www.w3.org/2000/svg' width = '16' height = '16' fill = 'currentColor' class = 'bi bi-eye-fill' viewBox = '0 0 16 16'>
+                                          <path d = 'M10.5 8a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0z'/>
+                                          <path d = 'M0 8s3-5.5 8-5.5S16 8 16 8s-3 5.5-8 5.5S0 8 0 8zm8 3.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z'/>
+                                       </svg>
+                                       View
+                                    </button>
+                                 </th>
+                              </tr>`;
+               tbody.innerHTML  += content;
+            }
+         }
+         else
+         {
+            alert(`Error: ${response.err_msg}`);
+         }
+      }
+
+      // Get all tasks for the said user
+      xhr.open('GET', TASK_URL);
+      xhr.setRequestHeader('user_id', user.id);
+      xhr.setRequestHeader('x-api-key', API_KEY);
+      xhr.setRequestHeader('Content-Type', 'application/json');
+      xhr.send();
 
       document.getElementById('btn-user-acct-update').addEventListener("click", function ()
       {
@@ -206,26 +257,23 @@
          data.email = document.querySelector('input[name=email]').value;
          data.username = document.querySelector('input[name=user_name]').value;
 
-         // Set-up HTTP Request
-         const xhr = new XMLHttpRequest();
-
          // Set-up listener to process completed requests
          xhr.onload = function (){
+            let response = JSON.parse(xhr.responseText);
+
             // Process our return data
             if (xhr.status == 200)
-            {
-               let response = JSON.parse(xhr.responseText);
+            {   
                alert(`You've successfully updated your account, ${response.first_name} ${response.last_name}`);
             }
             else
             {
-               const response = JSON.parse(xhr.responseText);
                alert(`Error: ${response.err_msg}`);
             }
          };
 
          // Create POST request
-         xhr.open('POST', `${URL}?type=update`);
+         xhr.open('POST', `${USER_URL}?type=update`);
 
          // Setting Request Header
          xhr.setRequestHeader('user_id', user.id);
@@ -235,7 +283,6 @@
          // Send POST
          xhr.send(JSON.stringify(data));
       });
-
    </script>
 </body>
 </html>
