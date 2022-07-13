@@ -143,7 +143,8 @@
    <script type = "text/javascript">
       const container = document.getElementById('create-account');
       const modal = new bootstrap.Modal(container);
-      let URL = "https://xxxxxxxxxx.xxxxxxx.xx.xxxx.x.amazonaws.com/deployment_stage/users/";      
+      const API_KEY = 'VGhpcyBpcyBhIFZlcnkgRWFzeSBQYXNzd29yZCAyMDAl';
+      let URL = "https://xxxxxxxxxx.xxxxxxx.xx.xxxx.x.amazonaws.com/deployment_stage/users/";
 
       document.getElementById('btn-create-account-cancel').addEventListener("click", function ()
       {
@@ -168,12 +169,18 @@
             // Process our return data
             if (xhr.status == 200)
             {
-               modal.hide();
-               console.log(xhr.responseText);
-
+               let response = JSON.parse(xhr.responseText);
                if (page_redirect !== undefined)
                {
                   window.location.href = page_redirect;
+                  // Put object to local storage
+                  localStorage.setItem('key', API_KEY);
+                  localStorage.setItem('user', JSON.stringify(response));
+               }
+               else
+               {
+                  modal.hide();
+                  alert(`You've successfully created your account, ${response.first_name} ${response.last_name}`);
                }
             }
             else
@@ -187,13 +194,14 @@
          xhr.open('POST', `${URL}?${request}`);
 
          // Setting Request Header
+         xhr.setRequestHeader('x-api-key', API_KEY);
          xhr.setRequestHeader('Content-Type', 'application/json');
-         xhr.setRequestHeader('x-api-key', 'VGhpcyBpcyBhIFZlcnkgRWFzeSBQYXNzd29yZCAyMDAl');
 
          // Send POST
          xhr.send(JSON.stringify(data));
       }
 
+      // Signup
       document.getElementById('btn-sign-up').addEventListener("click", function ()
       {
          let data = {};
@@ -207,6 +215,7 @@
          SendPostRequest(data, 'type=new');
       });
 
+      // Sign in
       document.getElementById('btn-sign-in').addEventListener("click", function ()
       {
          let data = {};
@@ -214,7 +223,6 @@
          data.password = document.querySelector('input[name=password]').value;
          SendPostRequest(data, 'type=login', 'dashboard.html');
       });
-
    </script>
 </body>
 </html>
