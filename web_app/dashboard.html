@@ -67,6 +67,7 @@
                   Create Date
                </th>
                <th></th>
+               <th></th>
             </tr>
          </thead>
          <tbody id = "tasks-tbody"></tbody>
@@ -74,7 +75,7 @@
 
       <!-- View task -->
       <div class = "modal fade" id = "task-modal" tabindex = "-1" aria-labelledby = "task-modal-label" aria-hidden = "true">
-         <div class = "modal-dialog">
+         <div class = "modal-dialog modal-lg">
             <div class = "modal-content">
                <div class = "modal-header">
                   <h5 class = "modal-title" id = "task-modal-label">
@@ -134,7 +135,7 @@
 
       <!-- User Details -->
       <div class = "modal fade" id = "user-modal" tabindex = "-1" aria-labelledby = "user-modal-label" aria-hidden = "true">
-         <div class = "modal-dialog">
+         <div class = "modal-dialog modal-lg">
             <div class = "modal-content">
                <div class = "modal-header">
                   <h5 class = "modal-title" id = "user-modal-label">
@@ -179,10 +180,10 @@
                   </div>
                </div>
                <div class = "modal-footer">
-                  <button class = "btn btn-primary" type = "button" id = "btn-user-acct-update">
+                  <button class = "btn btn-primary fw-bolder" type = "button" id = "btn-user-acct-update">
                      Update Account
                   </button>
-                  <button class = "btn btn-secondary" type = "button" data-bs-dismiss = "modal">
+                  <button class = "btn btn-secondary fw-bolder" type = "button" data-bs-dismiss = "modal">
                      Close
                   </button>
                </div>
@@ -192,22 +193,33 @@
    </main>
    <script src = "assets/js/bootstrap.bundle.min.js"></script>
    <script>
+      let user_id = '';
+      const user_modal_container = document.getElementById('user-modal');
+      const user_modal = new bootstrap.Modal(user_modal_container);
+
       // Set-up HTTP Request
       const xhr = new XMLHttpRequest();
       // Retrieve the object from local storage
       const API_KEY = localStorage.getItem('key');
-      let user = JSON.parse(localStorage.getItem('user'));
 
       // API URL
       let TASK_URL = "https://xxxxxxxxxx.xxxxxxx.xx.xxxx.x.amazonaws.com/deployment_stage/tasks/";
       let USER_URL = "https://xxxxxxxxxx.xxxxxxx.xx.xxxx.x.amazonaws.com/deployment_stage/users/";
 
-      // Set values to user input
-      document.querySelector('input[name=first_name]').value = user.first_name;
-      document.querySelector('input[name=last_name]').value = user.last_name;
-      document.querySelector('input[name=email]').value = user.email;
-      document.querySelector('input[name=user_name]').value = user.username;
+      function init_account()
+      {
+         // Retrieve the object from local storage
+         let user = JSON.parse(localStorage.getItem('user'));
+         user_id = user.id;
+
+         // Set values to user input
+         document.querySelector('input[name=first_name]').value = user.first_name;
+         document.querySelector('input[name=last_name]').value = user.last_name;
+         document.querySelector('input[name=email]').value = user.email;
+         document.querySelector('input[name=user_name]').value = user.username;
+      }
       
+      init_account();
       xhr.onload = function (){
          let response = JSON.parse(xhr.responseText);
 
@@ -215,25 +227,36 @@
          if (xhr.status == 200)
          {
             let tbody = document.getElementById('tasks-tbody');
-            for (const [key, value] of Object.entries(response))
+            if (response !== null)
             {
-               // Build elements that will be added to the innerHTML of our tbody
-               let content = `<tr class = 'align-middle'>
-                                 <th scope = 'row'>${value.title}</th>
-                                 <th>${value.description}</th>
-                                 <th>${value.status}</th>
-                                 <th>${value.date_created}</th>
-                                 <th class = 'd-flex justify-content-center'>
-                                    <button class = 'btn btn-lg btn-primary' data-bs-toggle = 'modal' data-bs-target = '#task-modal'  task-id = '${value.id}'>
-                                       <svg xmlns = 'http://www.w3.org/2000/svg' width = '16' height = '16' fill = 'currentColor' class = 'bi bi-eye-fill' viewBox = '0 0 16 16'>
-                                          <path d = 'M10.5 8a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0z'/>
-                                          <path d = 'M0 8s3-5.5 8-5.5S16 8 16 8s-3 5.5-8 5.5S0 8 0 8zm8 3.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z'/>
-                                       </svg>
-                                       View
-                                    </button>
-                                 </th>
-                              </tr>`;
-               tbody.innerHTML  += content;
+               for (const [key, value] of Object.entries(response))
+               {
+                  // Build elements that will be added to the innerHTML of our tbody
+                  let content = `<tr class = 'align-middle'>
+                                    <th scope = 'row'>${value.title}</th>
+                                    <th>${value.description}</th>
+                                    <th>${value.status}</th>
+                                    <th>${value.date_created}</th>
+                                    <th class = 'text-center'>
+                                       <button class = 'btn btn-lg btn-primary' data-bs-toggle = 'modal' data-bs-target = '#task-modal'  task-id = '${value.id}'>
+                                          <svg xmlns = 'http://www.w3.org/2000/svg' width = '16' height = '16' fill = 'currentColor' class = 'bi bi-eye-fill' viewBox = '0 0 16 16'>
+                                             <path d = 'M10.5 8a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0z'/>
+                                             <path d = 'M0 8s3-5.5 8-5.5S16 8 16 8s-3 5.5-8 5.5S0 8 0 8zm8 3.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z'/>
+                                          </svg>
+                                          View
+                                       </button>
+                                    </th>
+                                    <th class = 'text-center'>
+                                       <button class = 'btn btn-lg btn-danger' task-id = '${value.id}'>
+                                          <svg xmlns = 'http://www.w3.org/2000/svg' width = '16' height = '16' fill = 'currentColor' class = 'bi bi-trash-fill' viewBox = '0 0 16 16'>
+                                             <path d = 'M2.5 1a1 1 0 0 0-1 1v1a1 1 0 0 0 1 1H3v9a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V4h.5a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1H10a1 1 0 0 0-1-1H7a1 1 0 0 0-1 1H2.5zm3 4a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-1 0v-7a.5.5 0 0 1 .5-.5zM8 5a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-1 0v-7A.5.5 0 0 1 8 5zm3 .5v7a.5.5 0 0 1-1 0v-7a.5.5 0 0 1 1 0z'/>
+                                          </svg>
+                                          Delete
+                                       </button>
+                                    </th>
+                                 </tr>`;
+                  tbody.innerHTML  += content;
+               }
             }
          }
          else
@@ -244,11 +267,12 @@
 
       // Get all tasks for the said user
       xhr.open('GET', TASK_URL);
-      xhr.setRequestHeader('user_id', user.id);
+      xhr.setRequestHeader('user_id', user_id);
       xhr.setRequestHeader('x-api-key', API_KEY);
       xhr.setRequestHeader('Content-Type', 'application/json');
       xhr.send();
 
+      // Update user account
       document.getElementById('btn-user-acct-update').addEventListener("click", function ()
       {
          let data = {};
@@ -263,7 +287,12 @@
 
             // Process our return data
             if (xhr.status == 200)
-            {   
+            {
+               // Update object in local storage
+               localStorage.setItem('user', JSON.stringify(response));
+
+               init_account();
+               user_modal.hide();
                alert(`You've successfully updated your account, ${response.first_name} ${response.last_name}`);
             }
             else
@@ -276,7 +305,7 @@
          xhr.open('POST', `${USER_URL}?type=update`);
 
          // Setting Request Header
-         xhr.setRequestHeader('user_id', user.id);
+         xhr.setRequestHeader('user_id', user_id);
          xhr.setRequestHeader('x-api-key', API_KEY);
          xhr.setRequestHeader('Content-Type', 'application/json');
 
