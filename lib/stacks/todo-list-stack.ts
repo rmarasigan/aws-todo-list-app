@@ -103,7 +103,7 @@ export class TodoListAppStack extends Stack {
         statusCode: 200,
         allowOrigins: apigw.Cors.ALL_ORIGINS,
         allowMethods: ['GET', 'POST', 'DELETE', 'OPTIONS'],
-        allowHeaders: ['Content-Type', 'X-Api-Key', 'X-Amz-Date'],
+        allowHeaders: ['Content-Type', 'X-Api-Key', 'user_id', 'task_id'],
       }
     });
     api.applyRemovalPolicy(REMOVAL_POLICY);           // controls what happens to this resource when it stops being managed by CloudFormation
