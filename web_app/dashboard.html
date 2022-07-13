@@ -29,9 +29,22 @@
                </li>
             </ul>
             <div class = "d-flex">
-               <button class = "btn btn-success">
-                 + Add New To do
-               </button>
+               <div class = "row">
+                  <div class = "col">
+                     <button class = "btn btn-primary" data-bs-toggle = "modal" data-bs-target = "#user-modal">
+                        <svg xmlns = "http://www.w3.org/2000/svg" width = "16" height = "16" fill = "currentColor" class = "bi bi-person-circle" viewBox = "0 0 16 16">
+                           <path d = "M11 6a3 3 0 1 1-6 0 3 3 0 0 1 6 0z"/>
+                           <path fill-rule = "evenodd" d = "M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8zm8-7a7 7 0 0 0-5.468 11.37C3.242 11.226 4.805 10 8 10s4.757 1.225 5.468 2.37A7 7 0 0 0 8 1z"/>
+                        </svg>
+                        Account
+                      </button>
+                  </div>
+                  <div class = "col">
+                     <button class = "btn btn-success">
+                        + New Todo
+                      </button>
+                  </div>
+               </div>
             </div>
          </div>
       </div>
@@ -45,10 +58,13 @@
                   #
                </th>
                <th scope = "col">
-                  User
+                  Title
                </th>
                <th scope = "col">
-                  Title
+                  Description
+               </th>
+               <th scope = "col">
+                  Status
                </th>
                <th scope = "col">
                   Create Date
@@ -62,10 +78,13 @@
                   1
                </th>
                <th>
-                  Jacob Smith
+                  Create Cloud-based Todo App
                </th>
                <th>
                   Create Cloud-based Todo App
+               </th>
+               <th>
+                  In Progress
                </th>
                <th>
                   08-04-2022
@@ -83,6 +102,7 @@
          </tbody>
       </table>
 
+      <!-- View task -->
       <div class = "modal fade" id = "task-modal" tabindex = "-1" aria-labelledby = "task-modal-label" aria-hidden = "true">
          <div class = "modal-dialog">
             <div class = "modal-content">
@@ -106,8 +126,116 @@
             </div>
          </div>
       </div>
-   </main>
 
+      <!-- User Details -->
+      <div class = "modal fade" id = "user-modal" tabindex = "-1" aria-labelledby = "user-modal-label" aria-hidden = "true">
+         <div class = "modal-dialog">
+            <div class = "modal-content">
+               <div class = "modal-header">
+                  <h5 class = "modal-title" id = "user-modal-label">
+                     Account Details
+                  </h5>
+                  <button class = "btn-close" type = "button" data-bs-dismiss = "modal" aria-label = "Close"></button>
+               </div>
+               <div class = "modal-body">
+                  <div class = "row mb-3">
+                     <div class = "col">
+                        <div class = "form-floating">
+                           <input type = "text" class = "form-control" id = "floatingInput" name = "first_name" placeholder = "First Name" aria-label = "First Name">
+                           <label for = "floatingInput">
+                              First Name
+                           </label>
+                        </div>
+                     </div>
+                     <div class = "col">
+                        <div class = "form-floating">
+                           <input type = "text" class = "form-control" id = "floatingInput" name = "last_name" placeholder = "Last Name" aria-label = "Last Name">
+                           <label for = "floatingInput">
+                              Last Name
+                           </label>
+                        </div>
+                     </div>
+                  </div>
+                  <div class = "mb-3">
+                     <div class = "form-floating">
+                        <input type = "email" class = "form-control" id = "floatingInput" name = "email" placeholder = "Email" aria-label = "Email">
+                        <label for = "floatingInput">
+                           Email
+                        </label>
+                     </div>
+                  </div>
+                  <div class = "mb-3">
+                     <div class = "form-floating">
+                        <input type = "text" class = "form-control" id = "floatingInput" name = "user_name" placeholder = "Username" aria-label = "Username">
+                        <label for = "floatingInput">
+                           Username
+                        </label>
+                     </div>
+                  </div>
+               </div>
+               <div class = "modal-footer">
+                  <button class = "btn btn-primary" type = "button" id = "btn-user-acct-update">
+                     Update Account
+                  </button>
+                  <button class = "btn btn-secondary" type = "button" data-bs-dismiss = "modal">
+                     Close
+                  </button>
+               </div>
+            </div>
+         </div>
+      </div>
+   </main>
    <script src = "assets/js/bootstrap.bundle.min.js"></script>
+   <script>
+      // Retrieve the object from local storage
+      const API_KEY = localStorage.getItem('key');
+      let user = JSON.parse(localStorage.getItem('user'));
+      let URL = "https://xxxxxxxxxx.xxxxxxx.xx.xxxx.x.amazonaws.com/deployment_stage/users/";
+
+      // Set values to user input
+      document.querySelector('input[name=first_name]').value = user.first_name;
+      document.querySelector('input[name=last_name]').value = user.last_name;
+      document.querySelector('input[name=email]').value = user.email;
+      document.querySelector('input[name=user_name]').value = user.username;
+
+      document.getElementById('btn-user-acct-update').addEventListener("click", function ()
+      {
+         let data = {};
+         data.first_name = document.querySelector('input[name=first_name]').value;
+         data.last_name = document.querySelector('input[name=last_name]').value;
+         data.email = document.querySelector('input[name=email]').value;
+         data.username = document.querySelector('input[name=user_name]').value;
+
+         // Set-up HTTP Request
+         const xhr = new XMLHttpRequest();
+
+         // Set-up listener to process completed requests
+         xhr.onload = function (){
+            // Process our return data
+            if (xhr.status == 200)
+            {
+               let response = JSON.parse(xhr.responseText);
+               alert(`You've successfully updated your account, ${response.first_name} ${response.last_name}`);
+            }
+            else
+            {
+               const response = JSON.parse(xhr.responseText);
+               alert(`Error: ${response.err_msg}`);
+            }
+         };
+
+         // Create POST request
+         xhr.open('POST', `${URL}?type=update`);
+
+         // Setting Request Header
+         xhr.setRequestHeader('user_id', user.id);
+         xhr.setRequestHeader('x-api-key', API_KEY);
+         xhr.setRequestHeader('Content-Type', 'application/json');
+
+         // Send POST
+         xhr.send(JSON.stringify(data));
+      });
+
+   </script>
 </body>
 </html>
