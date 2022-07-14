@@ -112,7 +112,7 @@
                         </div>
                         <div class = "col">
                            <div class = "form-floating">
-                              <input type = "text" class = "form-control" id = "floatingInput" name = "task_date_created" placeholder = "Date Created" aria-label = "Date Created">
+                              <input type = "text" class = "form-control" id = "floatingInput" name = "task_date_created" placeholder = "Date Created" aria-label = "Date Created" readonly>
                               <label for = "floatingInput">
                                  Date Created
                               </label>
@@ -122,10 +122,10 @@
                   </div>
                </div>
                <div class = "modal-footer">
-                  <button class = "btn btn-primary" type = "button">
+                  <button class = "btn btn-primary fw-bolder" type = "button">
                      Save changes
                   </button>
-                  <button class = "btn btn-secondary" type = "button" data-bs-dismiss = "modal">
+                  <button class = "btn btn-secondary fw-bolder" type = "button" data-bs-dismiss = "modal">
                      Close
                   </button>
                </div>
@@ -194,8 +194,12 @@
    <script src = "assets/js/bootstrap.bundle.min.js"></script>
    <script>
       let user_id = '';
+
+      // Modals
       const user_modal_container = document.getElementById('user-modal');
+      const task_modal_container = document.getElementById('task-modal');
       const user_modal = new bootstrap.Modal(user_modal_container);
+      const task_modal = new bootstrap.Modal(task_modal_container);
 
       // Set-up HTTP Request
       const xhr = new XMLHttpRequest();
@@ -238,7 +242,7 @@
                                     <th>${value.status}</th>
                                     <th>${value.date_created}</th>
                                     <th class = 'text-center'>
-                                       <button class = 'btn btn-lg btn-primary' data-bs-toggle = 'modal' data-bs-target = '#task-modal'  task-id = '${value.id}'>
+                                       <button class = 'btn btn-lg btn-primary' id = 'btn-view-task' task-id = '${value.id}' onClick='ViewTask(${value.id})'>
                                           <svg xmlns = 'http://www.w3.org/2000/svg' width = '16' height = '16' fill = 'currentColor' class = 'bi bi-eye-fill' viewBox = '0 0 16 16'>
                                              <path d = 'M10.5 8a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0z'/>
                                              <path d = 'M0 8s3-5.5 8-5.5S16 8 16 8s-3 5.5-8 5.5S0 8 0 8zm8 3.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z'/>
@@ -247,7 +251,7 @@
                                        </button>
                                     </th>
                                     <th class = 'text-center'>
-                                       <button class = 'btn btn-lg btn-danger' task-id = '${value.id}'>
+                                       <button class = 'btn btn-lg btn-danger' task-id = '${value.id}' onClick='DeleteTask(${value.id})'>
                                           <svg xmlns = 'http://www.w3.org/2000/svg' width = '16' height = '16' fill = 'currentColor' class = 'bi bi-trash-fill' viewBox = '0 0 16 16'>
                                              <path d = 'M2.5 1a1 1 0 0 0-1 1v1a1 1 0 0 0 1 1H3v9a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V4h.5a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1H10a1 1 0 0 0-1-1H7a1 1 0 0 0-1 1H2.5zm3 4a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-1 0v-7a.5.5 0 0 1 .5-.5zM8 5a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-1 0v-7A.5.5 0 0 1 8 5zm3 .5v7a.5.5 0 0 1-1 0v-7a.5.5 0 0 1 1 0z'/>
                                           </svg>
@@ -312,6 +316,58 @@
          // Send POST
          xhr.send(JSON.stringify(data));
       });
+
+      // ViewTask gets the task details and set values to designate
+      // input element for displaying
+      function ViewTask(id)
+      {
+         xhr.onload = function(){
+            let response = JSON.parse(xhr.responseText);
+            if (xhr.status == 200)
+            {
+               document.querySelector('input[name=task_title]').value = response.title;
+               document.querySelector('input[name=task_description]').value = response.description;
+               document.querySelector('input[name=task_status]').value = response.status;
+               document.querySelector('input[name=task_date_created]').value = response.date_created;
+               task_modal.show();
+            }
+            else
+            {
+               alert(`Error: ${response.err_msg}`);
+            }
+         };
+
+         // Get specific task for the said user
+         xhr.open('GET', `${TASK_URL}${id}`);
+         xhr.setRequestHeader('user_id', user_id);
+         xhr.setRequestHeader('x-api-key', API_KEY);
+         xhr.setRequestHeader('Content-Type', 'application/json');
+         xhr.send();
+      }
+
+      // DeleteTask deletes the specific task
+      function DeleteTask(id)
+      {
+         xhr.onload = function() {
+            let response = JSON.parse(xhr.responseText);
+            if (xhr.status == 200)
+            {
+               alert(`Sucessfully deleted ${response.title}`);
+               document.querySelector(`button[task-id='${id}']`).parentElement.parentElement.remove();
+            }
+            else
+            {
+               alert(`Error: ${response.err_msg}`);
+            }
+         }
+
+         // Delete the specific task
+         xhr.open('DELETE', `${TASK_URL}${id}`);
+         xhr.setRequestHeader('user_id', user_id);
+         xhr.setRequestHeader('x-api-key', API_KEY);
+         xhr.setRequestHeader('Content-Type', 'application/json');
+         xhr.send();
+      }
    </script>
 </body>
 </html>
