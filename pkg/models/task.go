@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -164,6 +165,15 @@ func CreateTask(ctx context.Context, task *Task, svc dynamodbiface.DynamoDBAPI) 
 	// Get the total count of tasks to set TaskID
 	items := ItemCount(tablename, svc)
 	task.TaskID = fmt.Sprint(1 + items)
+
+	// Convert status string to int
+	taskStatus, err := strconv.Atoi(task.Status)
+	if err != nil {
+		return api.StatusBadRequest(err)
+	}
+
+	// Set task status value
+	task.Status = statusMap[taskStatus]
 
 	// Converting the record to dynamodb.AttributeValue type
 	value, err := dynamodbattribute.MarshalMap(task)
