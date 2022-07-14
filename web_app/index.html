@@ -210,8 +210,6 @@
          data.email = document.querySelector('input[name=email]').value;
          data.username = document.querySelector('input[name=user_name]').value;
          data.password = document.querySelector('input[name=user_password]').value;
-         console.log("Data ", data);
-         console.log("Stringify ", JSON.stringify(data));
          SendPostRequest(data, 'type=new');
       });
 
