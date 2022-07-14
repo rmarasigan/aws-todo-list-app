@@ -40,7 +40,7 @@
                       </button>
                   </div>
                   <div class = "col">
-                     <button class = "btn btn-success">
+                     <button class = "btn btn-success" data-bs-toggle = "modal" data-bs-target = "#new-task-modal">
                         + New Todo
                       </button>
                   </div>
@@ -73,56 +73,112 @@
          <tbody id = "tasks-tbody"></tbody>
       </table>
 
+      <!-- New Task -->
+      <div class = "modal fade" id = "new-task-modal" tabindex = "-1" aria-labelledby = "new-task-modal-label" aria-hidden = "true">
+         <div class = "modal-dialog modal-lg">
+            <div class = "modal-content">
+               <div class = "modal-header">
+                  <h5 class = "modal-title" id = "new-task-modal-label">
+                     New Task
+                  </h5>
+                  <button class = "btn-close" type = "button" data-bs-dismiss = "modal" aria-label = "Close"></button>
+               </div>
+               <div class = "modal-body">
+                  <div class = "mb-3">
+                     <div class = "form-floating">
+                        <input type = "text" class = "form-control" id = "floatingInput" name = "new_task_title" placeholder = "Title" aria-label = "Title">
+                        <label for = "floatingInput">
+                           Title
+                        </label>
+                     </div>
+                  </div>
+                  <div class = "mb-3">
+                     <div class = "form-floating">
+                        <input type = "text" class = "form-control" id = "floatingInput" name = "new_task_description" placeholder = "Description" aria-label = "Description">
+                        <label for = "floatingInput">
+                           Description
+                        </label>
+                     </div>
+                  </div>
+                  <div class = "mb-3">
+                     <div class = "form-floating">
+                        <select class = "form-select" name = "new_task_status" id = "floatingInput" aria-label = "Status">
+                           <option value = "1" selected>
+                              Backlog
+                           </option>
+                           <option value = "2">
+                              In Progress
+                           </option>
+                           <option value = "3">
+                              Done
+                           </option>
+                        </select>
+                        <label for = "floatingInput">
+                           Status
+                        </label>
+                     </div>
+                  </div>
+               </div>
+               <div class = "modal-footer">
+                  <button class = "btn btn-primary fw-bolder" id = "btn-add-task">
+                     Add
+                  </button>
+                  <button class = "btn btn-secondary fw-bolder" type = "button" data-bs-dismiss = "modal">
+                     Close
+                  </button>
+               </div>
+            </div>
+         </div>
+      </div>
+
       <!-- View task -->
       <div class = "modal fade" id = "task-modal" tabindex = "-1" aria-labelledby = "task-modal-label" aria-hidden = "true">
          <div class = "modal-dialog modal-lg">
             <div class = "modal-content">
                <div class = "modal-header">
                   <h5 class = "modal-title" id = "task-modal-label">
-                     Task Title
+                     Task
                   </h5>
                   <button class = "btn-close" type = "button" data-bs-dismiss = "modal" aria-label = "Close"></button>
                </div>
                <div class = "modal-body">
-                  <div class = "modal-body">
-                     <div class = "mb-3">
+                  <div class = "mb-3">
+                     <div class = "form-floating">
+                        <input type = "text" class = "form-control" id = "floatingInput" name = "task_title" placeholder = "Title" aria-label = "Title">
+                        <label for = "floatingInput">
+                           Title
+                        </label>
+                     </div>
+                  </div>
+                  <div class = "mb-3">
+                     <div class = "form-floating">
+                        <input type = "text" class = "form-control" id = "floatingInput" name = "task_description" placeholder = "Description" aria-label = "Description">
+                        <label for = "floatingInput">
+                           Description
+                        </label>
+                     </div>
+                  </div>
+                  <div class = "row mb3">
+                     <div class = "col">
                         <div class = "form-floating">
-                           <input type = "text" class = "form-control" id = "floatingInput" name = "task_title" placeholder = "Title" aria-label = "Title">
+                           <input type = "text" class = "form-control" id = "floatingInput" name = "task_status" placeholder = "Status" aria-label = "Status">
                            <label for = "floatingInput">
-                              Title
+                              Status
                            </label>
                         </div>
                      </div>
-                     <div class = "mb-3">
+                     <div class = "col">
                         <div class = "form-floating">
-                           <input type = "text" class = "form-control" id = "floatingInput" name = "task_description" placeholder = "Description" aria-label = "Description">
+                           <input type = "text" class = "form-control" id = "floatingInput" name = "task_date_created" placeholder = "Date Created" aria-label = "Date Created" readonly>
                            <label for = "floatingInput">
-                              Description
+                              Date Created
                            </label>
-                        </div>
-                     </div>
-                     <div class = "row mb3">
-                        <div class = "col">
-                           <div class = "form-floating">
-                              <input type = "text" class = "form-control" id = "floatingInput" name = "task_status" placeholder = "Status" aria-label = "Status">
-                              <label for = "floatingInput">
-                                 Status
-                              </label>
-                           </div>
-                        </div>
-                        <div class = "col">
-                           <div class = "form-floating">
-                              <input type = "text" class = "form-control" id = "floatingInput" name = "task_date_created" placeholder = "Date Created" aria-label = "Date Created" readonly>
-                              <label for = "floatingInput">
-                                 Date Created
-                              </label>
-                           </div>
                         </div>
                      </div>
                   </div>
                </div>
                <div class = "modal-footer">
-                  <button class = "btn btn-primary fw-bolder" type = "button">
+                  <button class = "btn btn-primary fw-bolder" type = "button" id = "btn-save-task">
                      Save changes
                   </button>
                   <button class = "btn btn-secondary fw-bolder" type = "button" data-bs-dismiss = "modal">
@@ -198,8 +254,10 @@
       // Modals
       const user_modal_container = document.getElementById('user-modal');
       const task_modal_container = document.getElementById('task-modal');
+      const new_task_modal_container = document.getElementById('new-task-modal');
       const user_modal = new bootstrap.Modal(user_modal_container);
       const task_modal = new bootstrap.Modal(task_modal_container);
+      const new_task_modal = new bootstrap.Modal(new_task_modal_container);
 
       // Set-up HTTP Request
       const xhr = new XMLHttpRequest();
@@ -317,6 +375,63 @@
          xhr.send(JSON.stringify(data));
       });
 
+      // Add a new task
+      document.getElementById('btn-add-task').addEventListener("click", function ()
+      {
+         let data = {};
+         data.title = document.querySelector('input[name=new_task_title]').value;
+         data.description = document.querySelector('input[name=new_task_description]').value;
+         data.status = document.querySelector('select[name=new_task_status]').value;
+
+         xhr.onload = function() {
+            let response = JSON.parse(xhr.responseText);
+
+            if (xhr.status == 200)
+            {
+               let tbody = document.getElementById('tasks-tbody');
+
+               // Build elements that will be added to the innerHTML of our tbody
+               let content = `<tr class = 'align-middle'>
+                                    <th scope = 'row'>${response.title}</th>
+                                    <th>${response.description}</th>
+                                    <th>${response.status}</th>
+                                    <th>${response.date_created}</th>
+                                    <th class = 'text-center'>
+                                       <button class = 'btn btn-lg btn-primary' id = 'btn-view-task' task-id = '${response.id}' onClick='ViewTask(${response.id})'>
+                                          <svg xmlns = 'http://www.w3.org/2000/svg' width = '16' height = '16' fill = 'currentColor' class = 'bi bi-eye-fill' viewBox = '0 0 16 16'>
+                                             <path d = 'M10.5 8a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0z'/>
+                                             <path d = 'M0 8s3-5.5 8-5.5S16 8 16 8s-3 5.5-8 5.5S0 8 0 8zm8 3.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z'/>
+                                          </svg>
+                                          View
+                                       </button>
+                                    </th>
+                                    <th class = 'text-center'>
+                                       <button class = 'btn btn-lg btn-danger' task-id = '${response.id}' onClick='DeleteTask(${response.id})'>
+                                          <svg xmlns = 'http://www.w3.org/2000/svg' width = '16' height = '16' fill = 'currentColor' class = 'bi bi-trash-fill' viewBox = '0 0 16 16'>
+                                             <path d = 'M2.5 1a1 1 0 0 0-1 1v1a1 1 0 0 0 1 1H3v9a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V4h.5a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1H10a1 1 0 0 0-1-1H7a1 1 0 0 0-1 1H2.5zm3 4a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-1 0v-7a.5.5 0 0 1 .5-.5zM8 5a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-1 0v-7A.5.5 0 0 1 8 5zm3 .5v7a.5.5 0 0 1-1 0v-7a.5.5 0 0 1 1 0z'/>
+                                          </svg>
+                                          Delete
+                                       </button>
+                                    </th>
+                                 </tr>`;
+               
+               new_task_modal.hide();
+               tbody.innerHTML  += content;
+               alert(`You've successfully created a new task: ${response.title}`);
+            }
+            else
+            {
+               alert(`Error ${response.err_msg}`);
+            }
+         }
+
+         xhr.open('POST', `${TASK_URL}?type=new`);
+         xhr.setRequestHeader('user_id', user_id);
+         xhr.setRequestHeader('x-api-key', API_KEY);
+         xhr.setRequestHeader('Content-Type', 'application/json');
+         xhr.send(JSON.stringify(data));
+      });
+      
       // ViewTask gets the task details and set values to designate
       // input element for displaying
       function ViewTask(id)
@@ -325,6 +440,7 @@
             let response = JSON.parse(xhr.responseText);
             if (xhr.status == 200)
             {
+               document.cookie = `task_id=${id}`;
                document.querySelector('input[name=task_title]').value = response.title;
                document.querySelector('input[name=task_description]').value = response.description;
                document.querySelector('input[name=task_status]').value = response.status;
