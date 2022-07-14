@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/aws/aws-lambda-go/events"
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/rmarasigan/aws-todo-list-app/pkg/response"
 )
 
@@ -22,6 +23,20 @@ func Response(status int, body interface{}) (*events.APIGatewayProxyResponse, er
 		},
 		StatusCode: status,
 		Body:       response.EncodeResponseJSON(status, body),
+	}, nil
+}
+
+// StatusBadRequest returns a response of an HTTP StatusBadRequest and an error message
+func StatusBadRequest(err error) (*events.APIGatewayProxyResponse, error) {
+	return &events.APIGatewayProxyResponse{
+		Headers: map[string]string{
+			"Content-Type":                  "application/json",
+			"Access-Control-Allow-Origin":   "*",
+			"Access-Control-Request-Method": "*",
+			"Access-Control-Allow-Headers":  "Content-Type,X-Api-Key",
+		},
+		StatusCode: http.StatusBadRequest,
+		Body:       response.EncodeJSON(Error{Message: aws.String(err.Error())}),
 	}, nil
 }
 
