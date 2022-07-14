@@ -337,11 +337,22 @@ func UpdateTask(ctx context.Context, id string, task *Task, svc dynamodbiface.Dy
 	if taskExist == nil {
 		logger.Info(&logger.Logs{Code: "UpdateTaskData", Message: "The task does not exist"},
 			logger.KVP{Key: "tablename", Value: tablename})
-		return nil, errors.New("task does not exist")
+		return nil, nil
 	}
 
 	// Validate if fields are empty
 	task = task.ValidateEmpty(taskExist)
+
+	// Convert status string to int
+	taskStatus, err := strconv.Atoi(task.Status)
+	if err != nil {
+		logger.Info(&logger.Logs{Code: "UpdateTaskData", Message: "Cannot convert task status string to int"},
+			logger.KVP{Key: "tablename", Value: tablename})
+		return nil, errors.New("failed to convert status to int")
+	}
+
+	// Set task status value
+	task.Status = statusMap[taskStatus]
 
 	// Set a name-value pair for update expression
 	update := expression.Set(expression.Name("title"), expression.Value(task.Title)).
