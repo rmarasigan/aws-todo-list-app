@@ -146,16 +146,14 @@
       const API_KEY = 'VGhpcyBpcyBhIFZlcnkgRWFzeSBQYXNzd29yZCAyMDAl';
       let URL = "https://xxxxxxxxxx.xxxxxxx.xx.xxxx.x.amazonaws.com/deployment_stage/users/";
 
-      document.getElementById('btn-create-account-cancel').addEventListener("click", function ()
+      function ClearInput()
       {
          input = document.querySelector('div.modal-body').querySelectorAll('input');;
          input.forEach(function(element)
          {
             element.value = '';
          });
-         
-         modal.hide();
-      });
+      }
 
       // SendPostRequest uses XML to create and send POST request with x-api-key.
       // It also allows you to redirect your page if `page_redirect` is specified.
@@ -180,6 +178,7 @@
                else
                {
                   modal.hide();
+                  ClearInput();
                   alert(`You've successfully created your account, ${response.first_name} ${response.last_name}`);
                }
             }
@@ -201,6 +200,7 @@
          xhr.send(JSON.stringify(data));
       }
 
+      // ---------- events ---------- //
       // Signup
       document.getElementById('btn-sign-up').addEventListener("click", function ()
       {
@@ -211,6 +211,13 @@
          data.username = document.querySelector('input[name=user_name]').value;
          data.password = document.querySelector('input[name=user_password]').value;
          SendPostRequest(data, 'type=new');
+      });
+
+      // Cancel signup
+      document.getElementById('btn-create-account-cancel').addEventListener("click", function ()
+      {
+         ClearInput();
+         modal.hide();
       });
 
       // Sign in
