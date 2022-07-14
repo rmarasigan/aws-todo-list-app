@@ -161,7 +161,17 @@
                   <div class = "row mb3">
                      <div class = "col">
                         <div class = "form-floating">
-                           <input type = "text" class = "form-control" id = "floatingInput" name = "task_status" placeholder = "Status" aria-label = "Status">
+                           <select class = "form-select" name = "task_status" id = "floatingInput" aria-label = "Status">
+                              <option value = "1" selected>
+                                 Backlog
+                              </option>
+                              <option value = "2">
+                                 In Progress
+                              </option>
+                              <option value = "3">
+                                 Done
+                              </option>
+                           </select>
                            <label for = "floatingInput">
                               Status
                            </label>
@@ -281,6 +291,36 @@
          document.querySelector('input[name=user_name]').value = user.username;
       }
       
+      // GetCookie returns the cookie value based on the passed cookie name
+      function GetCookie (cookie_name)
+      {
+         let cookie = {};
+         document.cookie.split(";").forEach(function (element)
+         {
+            let [key, value] = element.split('=');
+            cookie[key.trim()] = value;
+         });
+
+         return cookie[cookie_name];
+      }
+
+      // SetTaskStatus sets the task status value based on ID
+      function SetTaskStatus(task_status)
+      {
+         if (task_status == "Backlog")
+         {
+            return 1;
+         }
+         else if (task_status == "In Progress")
+         {
+            return 2
+         }
+         else
+         {
+            return 3;
+         }
+      }
+
       init_account();
       xhr.onload = function (){
          let response = JSON.parse(xhr.responseText);
@@ -432,6 +472,41 @@
          xhr.send(JSON.stringify(data));
       });
       
+      // Update task information
+      document.getElementById('btn-save-task').addEventListener("click", function ()
+      {
+         let data = {};
+         let task_id = GetCookie('task_id');
+         
+         data.title = document.querySelector('input[name=task_title]').value;
+         data.description = document.querySelector('input[name=task_description]').value;
+         data.status = document.querySelector('select[name=task_status]').value;
+
+         xhr.onload = function() {
+            let response = JSON.parse(xhr.responseText);
+            if (xhr.status == 200)
+            {
+               // Update table task information
+               let parent = document.querySelector(`button[task-id='${task_id}']`).parentElement.parentElement;
+               parent.children[0].innerHTML = response.title
+               parent.children[1].innerHTML = response.description;
+               parent.children[2].innerHTML = response.status;
+
+               task_modal.hide();
+               alert(`You've successfully update the task ${response.title}`);
+            }
+            else
+            {
+               alert(`Error: ${response.err_msg}`);
+            }
+         };
+
+         xhr.open('POST', `${TASK_URL}${task_id}/?type=update`);
+         xhr.setRequestHeader('x-api-key', API_KEY);
+         xhr.setRequestHeader('Content-Type', 'application/json');
+         xhr.send(JSON.stringify(data));
+      });
+
       // ViewTask gets the task details and set values to designate
       // input element for displaying
       function ViewTask(id)
@@ -440,11 +515,12 @@
             let response = JSON.parse(xhr.responseText);
             if (xhr.status == 200)
             {
-               document.cookie = `task_id=${id}`;
                document.querySelector('input[name=task_title]').value = response.title;
                document.querySelector('input[name=task_description]').value = response.description;
-               document.querySelector('input[name=task_status]').value = response.status;
+               document.querySelector('select[name=task_status]').value = SetTaskStatus(response.status);
                document.querySelector('input[name=task_date_created]').value = response.date_created;
+
+               document.cookie = `task_id=${id}`;
                task_modal.show();
             }
             else
