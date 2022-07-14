@@ -8,7 +8,6 @@ import (
 	"strconv"
 
 	"github.com/aws/aws-lambda-go/events"
-	"github.com/aws/aws-sdk-go/aws"
 	"github.com/rmarasigan/aws-todo-list-app/pkg/api"
 	"github.com/rmarasigan/aws-todo-list-app/pkg/logger"
 	"github.com/rmarasigan/aws-todo-list-app/pkg/models"
@@ -31,7 +30,7 @@ func GetUser(ctx context.Context, request events.APIGatewayProxyRequest) (*event
 	if err != nil {
 		logger.Error(err, &logger.Logs{Code: "DynamoDBError", Message: "Failed to fetch user"},
 			logger.KVP{Key: "tablename", Value: tablename})
-		return api.Response(http.StatusBadRequest, api.Error{Message: aws.String(err.Error())})
+		return api.StatusBadRequest(err)
 	}
 
 	return api.Response(http.StatusOK, result)
@@ -46,13 +45,13 @@ func LoginUser(ctx context.Context, request events.APIGatewayProxyRequest) (*eve
 	err := response.ParseJSON(body, user)
 	if err != nil {
 		logger.Error(err, &logger.Logs{Code: "JSONError", Message: "Failed to parse request body of user"})
-		return api.Response(http.StatusBadRequest, api.Error{Message: aws.String(err.Error())})
+		return api.StatusBadRequest(err)
 	}
 
 	result, err := models.UserAuthentication(ctx, user, svc)
 	if err != nil {
 		logger.Error(err, &logger.Logs{Code: "DynamoDBEror", Message: "Failed to authenticate user"})
-		return api.Response(http.StatusBadRequest, api.Error{Message: aws.String(err.Error())})
+		return api.StatusBadRequest(err)
 	}
 
 	return api.Response(http.StatusOK, result)
@@ -63,26 +62,40 @@ func GetTask(ctx context.Context, request events.APIGatewayProxyRequest) (*event
 	// Gets the request paramater
 	status := request.QueryStringParameters["status"]
 
+	// Gets the request path parameter
+	taskID := request.PathParameters["task_id"]
+
 	// Checks if the user_id value is set
 	user_id := request.Headers["user_id"]
 	if user_id == "" {
 		err := errors.New("user_id is not set")
 
 		logger.Error(err, &logger.Logs{Code: "TaskRequestHeaderError", Message: err.Error()})
-		return api.Response(http.StatusBadRequest, api.Error{Message: aws.String(err.Error())})
+		return api.StatusBadRequest(err)
 	}
 
 	if len(status) > 0 {
 		// Convert status string to int
 		taskStatus, err := strconv.Atoi(status)
 		if err != nil {
-			return api.Response(http.StatusBadRequest, api.Error{Message: aws.String(err.Error())})
+			return api.StatusBadRequest(err)
 		}
 
 		// Result will return a list of tasks base on status
 		result, err := models.FilterTasks(ctx, user_id, taskStatus, svc)
 		if err != nil {
-			return api.Response(http.StatusBadRequest, api.Error{Message: aws.String(err.Error())})
+			return api.StatusBadRequest(err)
+		}
+
+		return api.Response(http.StatusOK, result)
+	}
+
+	if len(taskID) > 0 {
+		// Result will return the specific task details
+		result, err := models.GetTask(ctx, taskID, svc)
+		if err != nil {
+			logger.Error(err, &logger.Logs{Code: "DynamoDBError", Message: "Failed to fetch tasks"})
+			return api.StatusBadRequest(err)
 		}
 
 		return api.Response(http.StatusOK, result)
@@ -92,7 +105,7 @@ func GetTask(ctx context.Context, request events.APIGatewayProxyRequest) (*event
 	result, err := models.FetchTasks(ctx, user_id, svc)
 	if err != nil {
 		logger.Error(err, &logger.Logs{Code: "DynamoDBError", Message: "Failed to fetch tasks"})
-		return api.Response(http.StatusBadRequest, api.Error{Message: aws.String(err.Error())})
+		return api.StatusBadRequest(err)
 	}
 
 	return api.Response(http.StatusOK, result)

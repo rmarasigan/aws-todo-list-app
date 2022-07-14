@@ -126,6 +126,7 @@ export class TodoListAppStack extends Stack {
     tasks.addMethod('POST');
 
     const task = tasks.addResource('{task_id}');
+    task.addMethod('GET');                            // GET /tasks/{task_id}
     task.addMethod('POST');                           // POST /tasks/{task_id}
     task.addMethod('DELETE');                         // DELETE /tasks/{task_id}
 
@@ -161,7 +162,7 @@ export class TodoListAppStack extends Stack {
       }
     });
 
-    // Adding Method Response for StatsOK
+    // Adding Method Response for StatusOK
     api.methods.forEach((method) => method.addMethodResponse({
       statusCode: "200",
       responseParameters: ResponseParameters,
