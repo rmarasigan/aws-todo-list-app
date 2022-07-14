@@ -111,10 +111,10 @@ func GetTask(ctx context.Context, task_id string, svc dynamodbiface.DynamoDBAPI)
 	// KeyConditionExpression: "id = task_id_value"
 	key := expression.Key("id").Equal(expression.Value(task_id))
 
-	// ProjectionExpression: id, title, description, status, timestamp
-	projection := expression.NamesList(expression.Name("id"), expression.Name("title"), expression.Name("description"), expression.Name("status"), expression.Name("timestamp"))
+	// ProjectionExpression: id, title, description, status, date_created
+	projection := expression.NamesList(expression.Name("id"), expression.Name("title"), expression.Name("description"), expression.Name("status"), expression.Name("date_created"))
 
-	// SELECT id, title, description, status, timestamp WHERE id = task_id_value
+	// SELECT id, title, description, status, date_created WHERE id = task_id_value
 	expr, err := expression.NewBuilder().WithKeyCondition(key).WithProjection(projection).Build()
 	if err != nil {
 		logger.Error(err, &logger.Logs{Code: "ExpressionError", Message: "Failed to create expression"},
@@ -210,10 +210,10 @@ func FetchTasks(ctx context.Context, user_id string, svc dynamodbiface.DynamoDBA
 	// FilterExpression: "user_id = user_id_value"
 	filter := expression.Name("user_id").Equal(expression.Value(user_id))
 
-	// ProjectionExpression: id, title, description, status, timestamp
-	projection := expression.NamesList(expression.Name("id"), expression.Name("title"), expression.Name("description"), expression.Name("status"), expression.Name("timestamp"))
+	// ProjectionExpression: id, title, description, status, date_created
+	projection := expression.NamesList(expression.Name("id"), expression.Name("title"), expression.Name("description"), expression.Name("status"), expression.Name("date_created"))
 
-	// SELECT id, title, description, status, timestamp FROM tablename WHERE user_id = 'user_id_value'
+	// SELECT id, title, description, status, date_created FROM tablename WHERE user_id = 'user_id_value'
 	expr, err := expression.NewBuilder().WithFilter(filter).WithProjection(projection).Build()
 	if err != nil {
 		logger.Error(err, &logger.Logs{Code: "ExpressionError", Message: "Failed to create expression"},
@@ -266,10 +266,10 @@ func FilterTasks(ctx context.Context, user_id string, status int, svc dynamodbif
 	// FilterExpression: "user_id = user_id_value AND status = status_value"
 	filter := expression.Name("user_id").Equal(expression.Value(user_id)).And(expression.Name("status").Equal(expression.Value(statusMap[status])))
 
-	// ProjectionExpression: id, title, description, status, timestamp
-	projection := expression.NamesList(expression.Name("id"), expression.Name("title"), expression.Name("description"), expression.Name("status"), expression.Name("timestamp"))
+	// ProjectionExpression: id, title, description, status, date_created
+	projection := expression.NamesList(expression.Name("id"), expression.Name("title"), expression.Name("description"), expression.Name("status"), expression.Name("date_created"))
 
-	// SELECT user_id, title, description, status, timestamp FROM tablename WHERE status = 'status_value'
+	// SELECT user_id, title, description, status, date_created FROM tablename WHERE status = 'status_value'
 	expr, err := expression.NewBuilder().WithFilter(filter).WithProjection(projection).Build()
 	if err != nil {
 		logger.Error(err, &logger.Logs{Code: "ExpressionError", Message: "Failed to create expression"},
