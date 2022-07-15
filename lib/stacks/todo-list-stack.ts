@@ -124,6 +124,7 @@ export class TodoListAppStack extends Stack {
     const tasks = api.root.addResource('tasks');      // represents the root resource of the API endpoint
     tasks.addMethod('GET');                           // GET /tasks
     tasks.addMethod('POST');
+    tasks.addMethod('DELETE');
 
     const task = tasks.addResource('{task_id}');
     task.addMethod('GET');                            // GET /tasks/{task_id}

@@ -40,8 +40,11 @@
                       </button>
                   </div>
                   <div class = "col">
-                     <button class = "btn btn-success" data-bs-toggle = "modal" data-bs-target = "#new-task-modal">
-                        + New Todo
+                     <button class = "btn btn-danger btn-md" data-bs-toggle = "modal" data-bs-target = "#user-delete-modal">
+                        <svg xmlns = "http://www.w3.org/2000/svg" width = "16" height = "16" fill = "currentColor" class = "bi bi-trash-fill" viewBox = "0 0 16 16">
+                           <path d = "M2.5 1a1 1 0 0 0-1 1v1a1 1 0 0 0 1 1H3v9a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V4h.5a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1H10a1 1 0 0 0-1-1H7a1 1 0 0 0-1 1H2.5zm3 4a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-1 0v-7a.5.5 0 0 1 .5-.5zM8 5a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-1 0v-7A.5.5 0 0 1 8 5zm3 .5v7a.5.5 0 0 1-1 0v-7a.5.5 0 0 1 1 0z"/>
+                        </svg>
+                        Delete Account
                       </button>
                   </div>
                </div>
@@ -51,6 +54,13 @@
    </nav>
 
    <main class = "container-fluid">
+      <div class = "d-flex mt-3" style = "float: right">
+         <div class = "col">
+            <button class = "btn btn-success" data-bs-toggle = "modal" data-bs-target = "#new-task-modal">
+               + New Todo
+             </button>
+         </div>
+      </div>
       <table class = "table table-stripped">
          <thead>
             <tr>
@@ -256,6 +266,34 @@
             </div>
          </div>
       </div>
+
+      <!-- Delete User Account -->
+      <div class = "modal fade" id = "user-delete-modal" tabindex = "-1" aria-labelledby = "user-delete-modal-label" aria-hidden = "true">
+         <div class = "modal-dialog">
+            <div class = "modal-content">
+               <div class = "modal-header">
+                  <h5 class = "modal-title" id = "user-delete-modal-label">
+                     <svg class = "mb-" xmlns = "http://www.w3.org/2000/svg" width = "16" height = "16" fill = "#dc3545" class = "bi bi-exclamation-octagon-fill" viewBox = "0 0 16 16">
+                        <path d = "M11.46.146A.5.5 0 0 0 11.107 0H4.893a.5.5 0 0 0-.353.146L.146 4.54A.5.5 0 0 0 0 4.893v6.214a.5.5 0 0 0 .146.353l4.394 4.394a.5.5 0 0 0 .353.146h6.214a.5.5 0 0 0 .353-.146l4.394-4.394a.5.5 0 0 0 .146-.353V4.893a.5.5 0 0 0-.146-.353L11.46.146zM8 4c.535 0 .954.462.9.995l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 4.995A.905.905 0 0 1 8 4zm.002 6a1 1 0 1 1 0 2 1 1 0 0 1 0-2z"/>
+                      </svg>
+                     Delete Account
+                  </h5>
+                  <button class = "btn-close" type = "button" data-bs-dismiss = "modal" aria-label = "Close"></button>
+               </div>
+               <div class = "modal-body">
+                  Are you sure you want to delete your account?
+               </div>
+               <div class = "modal-footer">
+                  <button class = "btn btn-danger fw-bolder" type = "button" id = "btn-user-delete">
+                     Delete
+                  </button>
+                  <button class = "btn btn-secondary fw-bolder" type = "button" data-bs-dismiss = "modal">
+                     Close
+                  </button>
+               </div>
+            </div>
+         </div>
+      </div>
    </main>
    <script src = "assets/js/bootstrap.bundle.min.js"></script>
    <script>
@@ -278,6 +316,7 @@
       let TASK_URL = "https://xxxxxxxxxx.xxxxxxx.xx.xxxx.x.amazonaws.com/deployment_stage/tasks/";
       let USER_URL = "https://xxxxxxxxxx.xxxxxxx.xx.xxxx.x.amazonaws.com/deployment_stage/users/";
 
+      // init_account initializes the user account
       function init_account()
       {
          // Retrieve the object from local storage
@@ -319,6 +358,32 @@
          {
             return 3;
          }
+      }
+
+      // DeleteUserTasks deletes all tasks related to the user
+      function DeleteUserTasks()
+      {
+         xhr.onload = function() {
+            let response = JSON.parse(xhr.responseText);
+            if (xhr.status == 200)
+            {
+               window.location.href = "index.html";
+               // Remove object to local storage
+               localStorage.removeItem('key');
+               localStorage.removeItem('user');
+            }
+            else
+            {
+               alert(`Error: ${response.err_msg}`);
+            }
+         };
+         
+         // Delete all tasks for the said user
+         xhr.open('DELETE', TASK_URL);
+         xhr.setRequestHeader('user_id', user_id);
+         xhr.setRequestHeader('x-api-key', API_KEY);
+         xhr.setRequestHeader('Content-Type', 'application/json');
+         xhr.send();
       }
 
       init_account();
@@ -374,6 +439,7 @@
       xhr.setRequestHeader('Content-Type', 'application/json');
       xhr.send();
 
+      // ---------- events ---------- //
       // Update user account
       document.getElementById('btn-user-acct-update').addEventListener("click", function ()
       {
@@ -413,6 +479,28 @@
 
          // Send POST
          xhr.send(JSON.stringify(data));
+      });
+
+      // Delete a user account
+      document.getElementById('btn-user-delete').addEventListener("click", function ()
+      {
+          xhr.onload = function() {
+            let response = JSON.parse(xhr.responseText);
+             if (xhr.status == 200)
+             {
+               DeleteUserTasks();
+             }
+             else
+             {
+               alert(`Error: ${response.err_msg}`);
+             }
+          }
+
+          // Delete the said user account
+         xhr.open('DELETE', `${USER_URL}${user_id}`);
+         xhr.setRequestHeader('x-api-key', API_KEY);
+         xhr.setRequestHeader('Content-Type', 'application/json');
+         xhr.send();
       });
 
       // Add a new task
