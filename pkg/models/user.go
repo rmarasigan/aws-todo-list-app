@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -130,7 +131,7 @@ func UserResponse(result map[string]*dynamodb.AttributeValue) (*Response, error)
 	return user, err
 }
 
-// GetUser gets a specific user using the id parameter
+// GetUser gets a specific user using the id parameter.
 func GetUser(ctx context.Context, id string, svc dynamodbiface.DynamoDBAPI) (*User, error) {
 	// Initialze a struct and returns a pointer to an instance of User struct
 	user := new(User)
@@ -183,6 +184,60 @@ func GetUser(ctx context.Context, id string, svc dynamodbiface.DynamoDBAPI) (*Us
 	}
 
 	return user, nil
+}
+
+// GenerateUserID generates a new ID if the current ID argument passed already exist.
+func GenerateUserID(ctx context.Context, id int, svc dynamodbiface.DynamoDBAPI) (string, error) {
+	var users []User
+	tablename := os.Getenv("USERS_TABLE")
+
+	// Build the query input parameters
+	params := &dynamodb.ScanInput{TableName: aws.String(tablename)}
+
+	// Make DynamoDB query API Call. Returns one or more items and item attributes by accessing item in a table or a secondary index.
+	result, err := svc.Scan(params)
+	if err != nil {
+		logger.Error(err, &logger.Logs{Code: "DynamoDBAPIError", Message: "Failed to call dynamoDB Query API"})
+		return "", err
+	}
+
+	// Unmarshal it into actual user for us to iterate
+	err = dynamodbattribute.UnmarshalListOfMaps(result.Items, &users)
+	if err != nil {
+		logger.Error(err, &logger.Logs{Code: "DynamoDBError", Message: "Failed to unmarshal user records"},
+			logger.KVP{Key: "tablename", Value: tablename})
+		return "", err
+	}
+
+	for i := 0; i < len(users); i++ {
+		userID, err := strconv.Atoi(users[i].UserID)
+		if err != nil {
+			logger.Error(err, &logger.Logs{Code: "StrIntError", Message: "Failed to convert user id string to integer"})
+			return "", err
+		}
+
+		// Check if the current ID already exist
+		if id == userID {
+			// Loop backwards to check if the ID exist
+			for j := (len(users) - 1); j >= 0; j-- {
+				_userID, err := strconv.Atoi(users[j].UserID)
+				if err != nil {
+					logger.Error(err, &logger.Logs{Code: "StrIntError", Message: "Failed to convert user id string to integer"})
+					return "", err
+				}
+
+				// Check backward if the current ID already exist
+				if id == _userID {
+					i = 0
+					id -= 1
+					continue
+				}
+			}
+		}
+
+	}
+
+	return fmt.Sprint(id), nil
 }
 
 // FetchUser returns a single row of user depending on the username.
@@ -309,15 +364,23 @@ func NewUserAccount(ctx context.Context, user *User, svc dynamodbiface.DynamoDBA
 	tablename := os.Getenv("USERS_TABLE")
 
 	// Get the total cound of users to set UserID
-	items := ItemCount(tablename, svc)
-	user.UserID = fmt.Sprint(1 + items)
+	count := ItemCount(tablename, svc) + 1
+
+	// Checks if ID exist and generate a new one
+	id, err := GenerateUserID(ctx, count, svc)
+	if err != nil {
+		logger.Error(err, &logger.Logs{Code: "GenerateUserID", Message: "Failed to generate user id"},
+			logger.KVP{Key: "tablename", Value: tablename})
+		return api.StatusBadRequest(err)
+	}
+	user.UserID = id
 
 	// Converting the record to dynamodb.AttributeValue type
 	value, err := dynamodbattribute.MarshalMap(user)
 	if err != nil {
 		logger.Error(err, &logger.Logs{Code: "DynamoDBError", Message: "Failed to marshal task"},
 			logger.KVP{Key: "tablename", Value: tablename})
-		return nil, err
+		return api.StatusBadRequest(err)
 	}
 
 	// Validate required fields
@@ -327,7 +390,7 @@ func NewUserAccount(ctx context.Context, user *User, svc dynamodbiface.DynamoDBA
 
 		logger.Error(err, &logger.Logs{Code: "UserAccountValidation", Message: "Required fields are not entered"},
 			logger.KVP{Key: "validation", Value: validate})
-		return nil, err
+		return api.StatusBadRequest(err)
 	}
 
 	// Fetch the specific user account
@@ -335,13 +398,13 @@ func NewUserAccount(ctx context.Context, user *User, svc dynamodbiface.DynamoDBA
 	if err != nil {
 		logger.Error(err, &logger.Logs{Code: "DynamoDBError", Message: "Failed to fetch user"},
 			logger.KVP{Key: "tablename", Value: tablename})
-		return nil, err
+		return api.StatusBadRequest(err)
 	}
 
 	// Checks if the user with the said username exist
 	if userExist != nil {
 		logger.Info(&logger.Logs{Code: "NewUserAccount", Message: "The username is already taken"})
-		return nil, errors.New("username is already taken")
+		return api.StatusBadRequest(errors.New("username is already taken"))
 	}
 
 	// Creating the data that you want to sent to dynamoDB
@@ -356,7 +419,7 @@ func NewUserAccount(ctx context.Context, user *User, svc dynamodbiface.DynamoDBA
 	if err != nil {
 		logger.Error(err, &logger.Logs{Code: "DynamoDBError", Message: "Failed to create a new user account"},
 			logger.KVP{Key: "tablename", Value: tablename})
-		return nil, err
+		return api.StatusBadRequest(err)
 	}
 
 	return api.Response(http.StatusOK, user)
@@ -424,7 +487,7 @@ func UpdateUserAccount(ctx context.Context, user *User, svc dynamodbiface.Dynamo
 	return output.Attributes, nil
 }
 
-// DeleteAccount deletes a specific user based on the id given
+// DeleteAccount deletes a specific user based on the id given.
 func DeleteAccount(ctx context.Context, id string, svc dynamodbiface.DynamoDBAPI) (map[string]*dynamodb.AttributeValue, error) {
 	tablename := os.Getenv("USERS_TABLE")
 
