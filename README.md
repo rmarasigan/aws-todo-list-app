@@ -1,5 +1,7 @@
 # AWS Cloud Based Todo List
 
+![aws-todo-list-app](assets/img/aws-todo-list-app.jpg)
+
 The AWS Cloud Based Todo List Web App contains the following:
 * Lambda
 * DynamoDB
