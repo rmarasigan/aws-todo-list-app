@@ -158,17 +158,79 @@ func GetTask(ctx context.Context, task_id string, svc dynamodbiface.DynamoDBAPI)
 	return task, nil
 }
 
+// GenerateTaskID generates a new ID if the current ID argument passed already exist.
+func GenerateTaskID(ctx context.Context, id int, svc dynamodbiface.DynamoDBAPI) (string, error) {
+	var tasks []Task
+	tablename := os.Getenv("TASKS_TABLE")
+
+	// Build the query input parameters
+	params := &dynamodb.ScanInput{TableName: aws.String(tablename)}
+
+	// Make DynamoDB query API Call. Returns one or more items and item attributes by accessing item in a table or a secondary index.
+	result, err := svc.Scan(params)
+	if err != nil {
+		logger.Error(err, &logger.Logs{Code: "DynamoDBAPIError", Message: "Failed to call dynamoDB Query API"})
+		return "", err
+	}
+
+	// Unmarshal it into actual task for us to iterate
+	err = dynamodbattribute.UnmarshalListOfMaps(result.Items, &tasks)
+	if err != nil {
+		logger.Error(err, &logger.Logs{Code: "DynamoDBError", Message: "Failed to unmarshal task records"},
+			logger.KVP{Key: "tablename", Value: tablename})
+		return "", err
+	}
+
+	for i := 0; i < len(tasks); i++ {
+		taskID, err := strconv.Atoi(tasks[i].TaskID)
+		if err != nil {
+			logger.Error(err, &logger.Logs{Code: "StrIntError", Message: "Failed to convert task id string to integer"})
+			return "", err
+		}
+
+		// Check if the current ID already exist
+		if id == taskID {
+			// Loop backwards to check if the ID exist
+			for j := (len(tasks) - 1); j >= 0; j-- {
+				_taskID, err := strconv.Atoi(tasks[j].TaskID)
+				if err != nil {
+					logger.Error(err, &logger.Logs{Code: "StrIntError", Message: "Failed to convert task id string to integer"})
+					return "", err
+				}
+
+				// Check backward if the current ID already exist
+				if id == _taskID {
+					i = 0
+					id -= 1
+					continue
+				}
+			}
+		}
+	}
+
+	return fmt.Sprint(id), nil
+}
+
 // CreateTask creates a new object of task that will be saved on dynamoDB table.
 func CreateTask(ctx context.Context, task *Task, svc dynamodbiface.DynamoDBAPI) (*events.APIGatewayProxyResponse, error) {
 	tablename := os.Getenv("TASKS_TABLE")
 
 	// Get the total count of tasks to set TaskID
-	items := ItemCount(tablename, svc)
-	task.TaskID = fmt.Sprint(1 + items)
+	count := ItemCount(tablename, svc) + 1
+
+	// Checks if ID exist and generate a new one
+	id, err := GenerateTaskID(ctx, count, svc)
+	if err != nil {
+		logger.Error(err, &logger.Logs{Code: "GenerateTaskID", Message: "Failed to generate task id"},
+			logger.KVP{Key: "tablename", Value: tablename})
+		return api.StatusBadRequest(err)
+	}
+	task.TaskID = id
 
 	// Convert status string to int
 	taskStatus, err := strconv.Atoi(task.Status)
 	if err != nil {
+		logger.Error(err, &logger.Logs{Code: "StrIntError", Message: "Failed to convert task status string to integer"})
 		return api.StatusBadRequest(err)
 	}
 
@@ -180,7 +242,7 @@ func CreateTask(ctx context.Context, task *Task, svc dynamodbiface.DynamoDBAPI) 
 	if err != nil {
 		logger.Error(err, &logger.Logs{Code: "DynamoDBError", Message: "Failed to marshal task"},
 			logger.KVP{Key: "tablename", Value: tablename})
-		return nil, err
+		return api.StatusBadRequest(err)
 	}
 
 	// Validate required fields
@@ -190,7 +252,7 @@ func CreateTask(ctx context.Context, task *Task, svc dynamodbiface.DynamoDBAPI) 
 
 		logger.Error(err, &logger.Logs{Code: "NewTaskValidation", Message: "Required fields are not entered"},
 			logger.KVP{Key: "validation", Value: validate})
-		return nil, err
+		return api.StatusBadRequest(err)
 	}
 
 	// Creating the data that you want to send to dynamoDB
@@ -204,7 +266,7 @@ func CreateTask(ctx context.Context, task *Task, svc dynamodbiface.DynamoDBAPI) 
 	_, err = svc.PutItem(params)
 	if err != nil {
 		logger.Error(err, &logger.Logs{Code: "DynamoDBError", Message: "Failed to create a new task"})
-		return nil, err
+		return api.StatusBadRequest(err)
 	}
 
 	return api.Response(http.StatusOK, task)
@@ -266,7 +328,7 @@ func FetchTasks(ctx context.Context, user_id string, svc dynamodbiface.DynamoDBA
 	return tasks, nil
 }
 
-// FilterTasks returns a list of tasks of the said user depending on the status or progress of the Task
+// FilterTasks returns a list of tasks of the said user depending on the status or progress of the Task.
 func FilterTasks(ctx context.Context, user_id string, status int, svc dynamodbiface.DynamoDBAPI) (*[]Task, error) {
 	// Initialize a struct and returns a pointer to an instance of Task struct
 	tasks := new([]Task)
@@ -437,4 +499,39 @@ func DeleteTask(ctx context.Context, id string, svc dynamodbiface.DynamoDBAPI) (
 	}
 
 	return output.Attributes, nil
+}
+
+// DeleteUserTasks deletes all tasks related to the user account that is being deleted.
+func DeleteUserTasks(ctx context.Context, user_id string, svc dynamodbiface.DynamoDBAPI) (*events.APIGatewayProxyResponse, error) {
+	tablename := os.Getenv("TASKS_TABLE")
+
+	tasks, err := FetchTasks(ctx, user_id, svc)
+	if err != nil {
+		logger.Error(err, &logger.Logs{Code: "DynamoDBError", Message: "Failed to fetch all tasks"},
+			logger.KVP{Key: "tablename", Value: tablename})
+		return api.StatusBadRequest(err)
+	}
+
+	// Loop over the tasks the user has and delete one by one
+	for _, task := range *tasks {
+		// Create a delete query based on the parameter
+		params := &dynamodb.DeleteItemInput{
+			TableName: aws.String(tablename),
+			// `Key` is a required field. The key is the primary key that uniquely identifies each item in the table.
+			// An AttributeValue represents the data for an attribute.
+			Key: map[string]*dynamodb.AttributeValue{
+				"id": {S: aws.String(task.TaskID)},
+			},
+		}
+
+		// Deletes all tasks related to the user account
+		_, err = svc.DeleteItem(params)
+		if err != nil {
+			logger.Error(err, &logger.Logs{Code: "DynamoDBError", Message: "Failed to delete all tasks"},
+				logger.KVP{Key: "tablename", Value: tablename})
+			return api.StatusBadRequest(err)
+		}
+	}
+
+	return api.Response(http.StatusOK, "all tasks related to the account are deleted")
 }
