@@ -15,7 +15,7 @@ The **Lambda** function will run our code in response to events and automaticall
 
 The **S3 Bucket** is for the frontend where it is going to be deployed as a static web application. It is a container for our static files and is the source code for our frontend.
 
-An **API Gateway** will route all requests to the lambda function. It has an API endpoint for `tasks` and `users`. The `tasks` endpoint has a method of *GET* and *POST*. It also has a resource where it accepts a `task_id` with the method of *POST* and *DELETE*. Whilst the `users` endpoint has the same structure as `tasks` but it accepts the `user_id` path parameter.
+An **API Gateway** will route all requests to the lambda function and is configured with CORS. It has an API endpoint for `tasks` and `users`. The `tasks` endpoint has a method of *GET* and *POST*. It also has a resource where it accepts a `task_id` with the method of *POST* and *DELETE*. Whilst the `users` endpoint has the same structure as `tasks` but it accepts the `user_id` path parameter.
 
 Lastly, **Code Pipeline** is used for the automation of the software deployment process (CI/CD). It automatically builds, tests, and launches the application each time there is a change in our code. Code Pipeline is integrated with a third-party service called Github. When the developer commit changes to the repository, Code Pipeline automatically detects the changes. Those changes are built, and if there are tests that are configured, they will run. After the tests are complete, the code is built and deployed to the staging. The pipeline setup we have has the developer stage and the production stage, where it needs to be manually approved to be deployed.
 
@@ -75,8 +75,8 @@ aws-todo-list-app
 * `lib/stacks/todo-list-stack.ts` is where your CDK application’s main stack is defined.
 * `lib/stage/todo-list-stage.ts` is where you instantiate your resource stack.
 * `lib/pipeline-stack.ts` is the initial structure of your pipeline and instantiating the `developer` and `production` stage.
-* `bin/todo-list.ts` is the entrypoint of the CDK application. It will load the stack defined in lib/todo-list-stack.ts.
-* `web_app` contains our front-end design for Todo List App that will be placed in an S3 bucket called `todo-list-app-dev`.
+* `bin/todo-list.ts` is the entrypoint of the CDK application. It will load the stack defined in `lib/todo-list-stack.ts`.
+* `web_app` contains our front-end design for Todo List App that will be placed in an S3 bucket called `todo-list-app-dev`. It has a functionality of create, read, update, and delete for `users` and `tasks`.
 * `package.json` is your npm module manifest. It includes information like the name of your app, version, dependencies and build scripts like “watch” and “build” (package-lock.json is maintained by npm)
 * `cdk.json` tells the toolkit how to run your app. In our case it will be "npx ts-node bin/todo-list.ts"
 * `tsconfig.json` your project’s typescript configuration
