@@ -3,7 +3,7 @@
 ![aws-todo-list-app](assets/img/aws-todo-list-app.jpg)
 
 The AWS Cloud Based Todo List Web App contains the following:
-* Lambda
+* [Lambda](AWS_Lambda.md)
 * DynamoDB
 * S3 Bucket
 * API Gateway
@@ -15,9 +15,9 @@ The **Lambda** function will run our code in response to events and automaticall
 
 The **S3 Bucket** is for the frontend where it is going to be deployed as a static web application. It is a container for our static files and is the source code for our frontend.
 
-An **API Gateway** will route all requests to the lambda function and is configured with CORS. It has an API endpoint for `tasks` and `users`. The `tasks` endpoint has a method of *GET* and *POST*. It also has a resource where it accepts a `task_id` with the method of *POST* and *DELETE*. Whilst the `users` endpoint has the same structure as `tasks` but it accepts the `user_id` path parameter.
+An **API Gateway** will route all requests to the lambda function and is configured with [CORS](https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS). It has an API endpoint for `tasks` and `users`. The `tasks` endpoint has a method of *GET* and *POST*. It also has a resource where it accepts a `task_id` with the method of *POST* and *DELETE*. Whilst the `users` endpoint has the same structure as `tasks` but it accepts the `user_id` path parameter.
 
-Lastly, **Code Pipeline** is used for the automation of the software deployment process (CI/CD). It automatically builds, tests, and launches the application each time there is a change in our code. Code Pipeline is integrated with a third-party service called Github. When the developer commit changes to the repository, Code Pipeline automatically detects the changes. Those changes are built, and if there are tests that are configured, they will run. After the tests are complete, the code is built and deployed to the staging. The pipeline setup we have has the developer stage and the production stage, where it needs to be manually approved to be deployed.
+Lastly, **Code Pipeline** is used for the automation of the software deployment process ([CI/CD](https://www.redhat.com/en/topics/devops/what-is-ci-cd)). It automatically builds, tests, and launches the application each time there is a change in our code. Code Pipeline is integrated with a third-party service called Github. When the developer commit changes to the repository, Code Pipeline automatically detects the changes. Those changes are built, and if there are tests that are configured, they will run. After the tests are complete, the code is built and deployed to the staging. The pipeline setup we have has the developer stage and the production stage, where it needs to be manually approved to be deployed.
 
 ## File Hierarchy
 ```
