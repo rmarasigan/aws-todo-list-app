@@ -5,7 +5,7 @@
 The AWS Cloud Based Todo List Web App contains the following:
 * [Lambda](AWS_Lambda.md)
 * [DynamoDB](AWS_DynamoDB.md)
-* S3 Bucket
+* [S3 Bucket](AWS_S3Bucket.md)
 * API Gateway
 * Code Pipeline
 
