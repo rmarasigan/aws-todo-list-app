@@ -28,7 +28,7 @@
 ## CI/CD
 **CI/CD** is a method to frequently deliver apps to customers by introducing automation into the stages of app development. The main conecpts attributed to CI/CD are continuous integration, continuous delivery, and continuous deployment. CI/CD is a solution to the problems integrating new code can cause for development and operations teams (AKA "integration hell").
 
-CI/CD falls under DevOPS (the joining od development and operations) and combines the practices of continuous integration and continuous delivery. CI/CD automates much or all of the manual human intervention traditionally needed to get new code from a commit into production such as build, test, and deploy, as well as infrastructure provisioning.
+CI/CD falls under DevOPS (the joining of development and operations) and combines the practices of continuous integration and continuous delivery. CI/CD automates much or all of the manual human intervention traditionally needed to get new code from a commit into production such as build, test, and deploy, as well as infrastructure provisioning.
 
 ![ci_cd](assets/img/ci_cd.jpg)
 
