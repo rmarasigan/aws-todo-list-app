@@ -6,7 +6,7 @@ The AWS Cloud Based Todo List Web App contains the following:
 * [Lambda](AWS_Lambda.md)
 * [DynamoDB](AWS_DynamoDB.md)
 * [S3 Bucket](AWS_S3Bucket.md)
-* API Gateway
+* [API Gateway](AWS_APIGateway.md)
 * Code Pipeline
 
 The **Lambda** function will run our code in response to events and automatically manages the underlying compute resources. It will handle every request coming from the API gateway and will return a response from the API gateway. The `TodoListFunction` lambda function has an access to the DynamoDB of `users` and `tasks` table for reading and writing permission.
