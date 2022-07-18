@@ -19,6 +19,17 @@ An **API Gateway** will route all requests to the lambda function and is configu
 
 Lastly, **Code Pipeline** is used for the automation of the software deployment process ([CI/CD](https://www.redhat.com/en/topics/devops/what-is-ci-cd)). It automatically builds, tests, and launches the application each time there is a change in our code. Code Pipeline is integrated with a third-party service called Github. When the developer commit changes to the repository, Code Pipeline automatically detects the changes. Those changes are built, and if there are tests that are configured, they will run. After the tests are complete, the code is built and deployed to the staging. The pipeline setup we have has the developer stage and the production stage, where it needs to be manually approved to be deployed.
 
+## Talking Point
+* Installation
+* Create a new application
+* [AWS Lambda](AWS_Lambda.md)
+* [AWS DynamoDB](AWS_DynamoDB.md)
+* [AWS S3 Bucket](AWS_S3Bucket.md)
+* [AWS API Gateway](AWS_APIGateway.md)
+* [AWS CodePipeline](AWS_CodePipeline.md)
+* S3 Static Web Hosting
+* Set-up CDK Pipeline
+
 ## File Hierarchy
 ```
 aws-todo-list-app
