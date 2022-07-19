@@ -246,7 +246,13 @@ Run `npm install` in the root of your project and this will install all the depe
 
 ```bash
 dev@dev:~:aws-todo-list-app$ npm install
-up to date, audited 537 packages in 964ms
+npm WARN deprecated source-map-url@0.4.1: See https://github.com/lydell/source-map-url#deprecated
+npm WARN deprecated urix@0.1.0: Please see https://github.com/lydell/urix#deprecated
+npm WARN deprecated resolve-url@0.2.1: https://github.com/lydell/resolve-url#deprecated
+npm WARN deprecated source-map-resolve@0.5.3: See https://github.com/lydell/source-map-resolve#deprecated
+npm WARN deprecated sane@4.1.0: some dependency vulnerabilities fixed, support for node < 10 dropped, and newer ECMAScript syntax/features added
+
+added 518 packages, and audited 537 packages in 3s
 
 27 packages are looking for funding
   run `npm fund` for details
