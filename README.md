@@ -120,6 +120,25 @@ dev@dev:~$ aws s3 ls --profile profile_name
 
 When no `--profile` parameter in the command, `default` profile will be used.
 
+## Install aws-todo-list-app
+Run `npm install` in the root of your project and this will install all the dependencies.
+
+```bash
+dev@dev:~:aws-todo-list-app$ npm install
+npm WARN deprecated source-map-url@0.4.1: See https://github.com/lydell/source-map-url#deprecated
+npm WARN deprecated urix@0.1.0: Please see https://github.com/lydell/urix#deprecated
+npm WARN deprecated resolve-url@0.2.1: https://github.com/lydell/resolve-url#deprecated
+npm WARN deprecated source-map-resolve@0.5.3: See https://github.com/lydell/source-map-resolve#deprecated
+npm WARN deprecated sane@4.1.0: some dependency vulnerabilities fixed, support for node < 10 dropped, and newer ECMAScript syntax/features added
+
+added 518 packages, and audited 537 packages in 3s
+
+27 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+```
+
 ## Synthesis
 Program synthesis is the process of finding a program in the underlying programming language that meets the user's specification in way that satisfies their needs. Programming Synthesis means dealing with the aspects of the software development process which can, at least in principle, be automated. Its goal is to mechanically synthesize correct and efﬁcient computer code from declarative speciﬁcations.
 
@@ -246,25 +265,6 @@ Stack ARN:
 arn:aws:cloudformation:xx-xxxx-x:xxxxxxxxxx:stack/TodoListAppStack/xxxxxxxxxxxxxxxxxxxxxxxxx
 
 ✨  Total time: 110.66s
-```
-
-## Install aws-todo-list-app
-Run `npm install` in the root of your project and this will install all the dependencies.
-
-```bash
-dev@dev:~:aws-todo-list-app$ npm install
-npm WARN deprecated source-map-url@0.4.1: See https://github.com/lydell/source-map-url#deprecated
-npm WARN deprecated urix@0.1.0: Please see https://github.com/lydell/urix#deprecated
-npm WARN deprecated resolve-url@0.2.1: https://github.com/lydell/resolve-url#deprecated
-npm WARN deprecated source-map-resolve@0.5.3: See https://github.com/lydell/source-map-resolve#deprecated
-npm WARN deprecated sane@4.1.0: some dependency vulnerabilities fixed, support for node < 10 dropped, and newer ECMAScript syntax/features added
-
-added 518 packages, and audited 537 packages in 3s
-
-27 packages are looking for funding
-  run `npm fund` for details
-
-found 0 vulnerabilities
 ```
 
 ## Reference
