@@ -21,7 +21,7 @@ Lastly, **Code Pipeline** is used for the automation of the software deployment 
 
 ## Talking Point
 * [Installation](Installation.md)
-* Create a new application
+* [Create a new application](CreateNewApplication.md)
 * [AWS Lambda](AWS_Lambda.md)
 * [AWS DynamoDB](AWS_DynamoDB.md)
 * [AWS S3 Bucket](AWS_S3Bucket.md)
