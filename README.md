@@ -94,6 +94,13 @@ aws-todo-list-app
 * `.gitignore` and `.npmignore` tell git and npm which files to include/exclude from source control and when publishing this module to the package manager.
 * `node_modules` is maintained by npm and includes all your project’s dependencies.
 
+---
+**NOTE**
+
+For the **`web_app`** front-end design to work, you'll need to deploy your application first to **CloudFormation** using AWS CDK. After the stack is completely deployed, go to API Gateway console -> `todo-list-api` -> Stages. Select on the stage menu you have (e.g. `prod`) then it will show you the list of APIs with its method and invoke URL. Get the invoke URL for `tasks` and `users`, then update the `web_app/dashboard.html` and `web_app/index.html` URL.
+
+---
+
 ## AWS Configure
 Configure your workstation with your credentials and an AWS region.
 ```bash
