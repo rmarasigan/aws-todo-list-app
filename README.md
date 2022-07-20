@@ -27,7 +27,7 @@ Lastly, **Code Pipeline** is used for the automation of the software deployment 
 * [AWS S3 Bucket](AWS_S3Bucket.md)
 * [AWS API Gateway](AWS_APIGateway.md)
 * [AWS CodePipeline](AWS_CodePipeline.md)
-* S3 Static Web Hosting
+* [S3 Static Web Hosting](S3StaticWebsiteHosting.md)
 * [Set-up CDK Pipeline](SetUpCDKPipeline.md)
 
 ## File Hierarchy
