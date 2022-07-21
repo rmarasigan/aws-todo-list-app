@@ -144,6 +144,11 @@ import { Construct } from 'constructs';
 import { Stage, StageProps } from 'aws-cdk-lib';
 import { AppNameStack } from '../stacks/app-name-stack';
 
+export interface AppNameProps extends StageProps
+{
+   deploymentStage: string;
+}
+
 export class AppNamePipelineStage extends Stage
 {
    constructor(scope: Construct, id: string, props: AppNameProps)
@@ -173,6 +178,34 @@ Synthesise and deploy
 ```bash
 dev@dev:~:app-name$ cdk synth && cdk deploy
 ```
+
+Go to AWS CodePipeline console to verify that the pipeline has been successfully deployed.
+##### TodoListAppPipeline
+
+![todo-app-pipeline](assets/img/todo-app-pipeline.png)
+
+If you start pushing some changes, it will be deployed first on the `developer` stage.
+
+![todo-app-developer-pipeline](assets/img/todo-app-developer-pipeline.png)
+
+In order to roll out the changes to the `production` stage, you'll need to manually approve it. Click on **Review**.
+
+![todo-app-production-pipeline](assets/img/todo-app-production-pipeline.png)
+
+After hitting the **Review** button a small dialogue box will pop up, and click on **Approve** to roll out the changes on `production` stage. Deploying the stack to `production` stage sometimes might cause an error that says, "x resource already exists in stack". In order to fix this, delete the stack, and try to re-deploy it again.
+
+![todo-app-production-pipeline](assets/img/todo-app-production-approve.png)
+
+Being deployed on `production` stage, it will create the same resources that will look like this: `resource-name-developer` and `resource-name-production`.
+
+#### DynamoDB
+![dynamodb-todo-list-pipeline-result](assets/img/dynamodb-todo-list-pipeline-result.png)
+
+#### Lambda Function
+![lambda-todo-list-pipeline-result](assets/img/lambda-todo-list-pipeline-result.png)
+
+#### API Gateway
+![apigw-todo-list-pipeline-result](assets/img/apigw-todo-list-pipeline-result.png)
 
 ## Reference
 * [Connections](https://docs.aws.amazon.com/dtconsole/latest/userguide/welcome-connections.html)
