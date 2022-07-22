@@ -2,7 +2,7 @@
 import * as cdk from 'aws-cdk-lib';
 import { Stack, StackProps, RemovalPolicy } from 'aws-cdk-lib';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
-import { EventSourceMapping, Runtime } from 'aws-cdk-lib/aws-lambda';
+import { Runtime } from 'aws-cdk-lib/aws-lambda';
 import { BucketEncryption, Bucket } from 'aws-cdk-lib/aws-s3';
 import { BucketDeployment, Source } from 'aws-cdk-lib/aws-s3-deployment';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
@@ -55,7 +55,6 @@ export class TodoListAppStack extends Stack {
       },
       removalPolicy: REMOVAL_POLICY,            
     });
-    todoListUsersTable.grantReadWriteData(TodoList_customRole);
 
     const todoListTaskTable = new dynamodb.Table(this, 'TodoListTasksTable', {
       tableName: 'todo-list-tasks',              // physical table name
@@ -66,7 +65,6 @@ export class TodoListAppStack extends Stack {
       },
       removalPolicy: REMOVAL_POLICY
     });
-    todoListUsersTable.grantReadWriteData(TodoList_customRole);
 
     // Lambda Function
     const todoList = new lambda.Function(this, 'TodoListFunction', {
