@@ -267,9 +267,29 @@ arn:aws:cloudformation:xx-xxxx-x:xxxxxxxxxx:stack/TodoListAppStack/xxxxxxxxxxxxx
 ✨  Total time: 110.66s
 ```
 
+## Using `Makefile` to install, bootstrap, and deploy the project
+
+1. Install all the dependencies and bootstrap your project
+    ```bash
+    dev@dev:~:aws-todo-list-app$ make init
+    ```
+
+    To initialize the project with specific AWS profile, you can pass a parameter called `profile`.
+    ```bash
+    dev@dev:~:aws-todo-list-app$ make init profile=profile_name
+    ```
+
+2. Deploy the project.
+    ```bash
+    dev@dev:~:aws-todo-list-app$ make deploy
+    # Deploying with specific AWS profile
+    dev@dev:~:aws-todo-list-app$ make deploy profile=profile_name
+    ```
+
 ## Reference
 * [Bootstrap](https://www.techopedia.com/definition/3328/bootstrap)
 * [AWS CDK v2](https://docs.aws.amazon.com/cdk/api/v2/)
+* [Learn Makefiles](https://makefiletutorial.com/)
 * [TypeScript Workshop](https://cdkworkshop.com/20-typescript.html)
 * [CORS on API Gateway](https://enable-cors.org/server_awsapigateway.html)
 * [What is Bootstrapping?](https://www.youtube.com/watch?v=nslY1s0U9_c)
