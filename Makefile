@@ -7,6 +7,7 @@ GO_COMPILE:=GOOS=linux GOARCH=amd64 go build
 init:
 	echo "ℹ️  INITIALIZING PROJECT..."
 	npm install
+	go mod tidy
 
 ifdef profile
 	cdk bootstrap --profile ${profile}
