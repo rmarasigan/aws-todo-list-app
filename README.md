@@ -1,13 +1,13 @@
 # AWS Cloud Based Todo List
 
-![aws-todo-list-app](assets/img/aws-todo-list-app.jpg)
+![aws-todo-list-app](docs/assets/img/aws-todo-list-app.jpg)
 
 The AWS Cloud Based Todo List Web App contains the following:
-* [Lambda](AWS_Lambda.md)
-* [DynamoDB](AWS_DynamoDB.md)
-* [S3 Bucket](AWS_S3Bucket.md)
-* [API Gateway](AWS_APIGateway.md)
-* [Code Pipeline](AWS_CodePipeline.md)
+* [Lambda](docs/AWS_Lambda.md)
+* [DynamoDB](docs/AWS_DynamoDB.md)
+* [S3 Bucket](docs/AWS_S3Bucket.md)
+* [API Gateway](docs/AWS_APIGateway.md)
+* [Code Pipeline](docs/AWS_CodePipeline.md)
 
 The **Lambda** function will run our code in response to events and automatically manages the underlying compute resources. It will handle every request coming from the API gateway and will return a response from the API gateway. The `TodoListFunction` lambda function has an access to the DynamoDB of `users` and `tasks` table for reading and writing permission.
 
@@ -20,15 +20,15 @@ An **API Gateway** will route all requests to the lambda function and is configu
 Lastly, **Code Pipeline** is used for the automation of the software deployment process ([CI/CD](https://www.redhat.com/en/topics/devops/what-is-ci-cd)). It automatically builds, tests, and launches the application each time there is a change in our code. Code Pipeline is integrated with a third-party service called Github. When the developer commit changes to the repository, Code Pipeline automatically detects the changes. Those changes are built, and if there are tests that are configured, they will run. After the tests are complete, the code is built and deployed to the staging. The pipeline setup we have has the developer stage and the production stage, where it needs to be manually approved to be deployed.
 
 ## Talking Point
-* [Installation](Installation.md)
-* [Create a new application](CreateNewApplication.md)
-* [AWS Lambda](AWS_Lambda.md)
-* [AWS DynamoDB](AWS_DynamoDB.md)
-* [AWS S3 Bucket](AWS_S3Bucket.md)
-* [AWS API Gateway](AWS_APIGateway.md)
-* [AWS CodePipeline](AWS_CodePipeline.md)
-* [S3 Static Web Hosting](S3StaticWebsiteHosting.md)
-* [Set-up CDK Pipeline](SetUpCDKPipeline.md)
+* [Installation](docs/Installation.md)
+* [Create a new application](docs/CreateNewApplication.md)
+* [AWS Lambda](docs/AWS_Lambda.md)
+* [AWS DynamoDB](docs/AWS_DynamoDB.md)
+* [AWS S3 Bucket](docs/AWS_S3Bucket.md)
+* [AWS API Gateway](docs/AWS_APIGateway.md)
+* [AWS CodePipeline](docs/AWS_CodePipeline.md)
+* [S3 Static Web Hosting](docs/S3StaticWebsiteHosting.md)
+* [Set-up CDK Pipeline](docs/SetUpCDKPipeline.md)
 
 ## File Hierarchy
 ```
