@@ -26,6 +26,7 @@ export class TodoListAppStack extends Stack {
         ManagedPolicy.fromAwsManagedPolicyName("service-role/AWSLambdaBasicExecutionRole")  // managed policies associated with this role
       ]
     });
+    TodoList_customRole.applyRemovalPolicy(REMOVAL_POLICY);
 
     // S3 Bucket for our Frontend
     // Instantiate Bucket with bucketName and versioned properties
@@ -177,10 +178,10 @@ export class TodoListAppStack extends Stack {
 
     api.methods.filter((method) => method.httpMethod === "OPTIONS")
                .forEach((method) => {
-                 const methodCfn = method.node.defaultChild as apigw.CfnMethod;
-                 methodCfn.addPropertyOverride('ApiKeyRequired', false);
-                 methodCfn.addPropertyDeletionOverride('AuthorizedId');
-                 methodCfn.addPropertyOverride('AuthorizationType', 'NONE');
+                const methodCfn = method.node.defaultChild as apigw.CfnMethod;
+                methodCfn.addPropertyOverride('ApiKeyRequired', false);
+                methodCfn.addPropertyDeletionOverride('AuthorizedId');
+                methodCfn.addPropertyOverride('AuthorizationType', 'NONE');
                });
   }
 }
