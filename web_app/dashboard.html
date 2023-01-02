@@ -133,7 +133,7 @@
                   <button class = "btn btn-primary fw-bolder" id = "btn-add-task">
                      Add
                   </button>
-                  <button class = "btn btn-secondary fw-bolder" type = "button" data-bs-dismiss = "modal">
+                  <button class = "btn btn-secondary fw-bolder" type = "button" data-bs-dismiss = "modal" id = "btn-close-task">
                      Close
                   </button>
                </div>
@@ -328,6 +328,15 @@
          document.querySelector('input[name=last_name]').value = user.last_name;
          document.querySelector('input[name=email]').value = user.email;
          document.querySelector('input[name=user_name]').value = user.username;
+      }
+
+      function ClearInput(element)
+      {
+         input = document.querySelector(`${element} .modal-body`).querySelectorAll('input');
+         input.forEach(function(element)
+         {
+            element.value = '';
+         });
       }
       
       // GetCookie returns the cookie value based on the passed cookie name
@@ -545,6 +554,7 @@
                
                new_task_modal.hide();
                tbody.innerHTML  += content;
+               ClearInput('#new-task-modal');
                alert(`You've successfully created a new task: ${response.title}`);
             }
             else
@@ -558,6 +568,13 @@
          xhr.setRequestHeader('x-api-key', API_KEY);
          xhr.setRequestHeader('Content-Type', 'application/json');
          xhr.send(JSON.stringify(data));
+      });
+      
+      // Close add task modal
+      document.getElementById("btn-close-task").addEventListener("click", function ()
+      {
+         new_task_modal.hide();
+         ClearInput('#new-task-modal');
       });
       
       // Update task information
