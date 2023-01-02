@@ -1,6 +1,3 @@
-# Exclude web_app folder
-!web_app/
-
 *.js
 !jest.config.js
 *.d.ts
@@ -9,3 +6,6 @@ node_modules
 # CDK asset staging directory
 .cdk.staging
 cdk.out
+
+# Exclude web_app folder
+!web_app/assets/
