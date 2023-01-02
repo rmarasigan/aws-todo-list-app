@@ -1,3 +1,6 @@
+# Exclude web_app folder
+!web_app/
+
 *.js
 !jest.config.js
 *.d.ts
