@@ -6,7 +6,7 @@ import (
 	"net/http"
 
 	"github.com/aws/aws-lambda-go/events"
-	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/rmarasigan/aws-todo-list-app/pkg/api"
 	"github.com/rmarasigan/aws-todo-list-app/pkg/logger"
 	"github.com/rmarasigan/aws-todo-list-app/pkg/models"
@@ -22,14 +22,14 @@ func CreateUser(ctx context.Context, request events.APIGatewayProxyRequest) (*ev
 	// Parse the request body of User
 	err := response.ParseJSON(body, user)
 	if err != nil {
-		logger.Error(err, &logger.Logs{Code: "JSONError", Message: "Failed to parse request body of user"})
+		logger.Error(err, &logger.Logs{Code: "CreateUser", Message: "Failed to parse request body of user"})
 		return api.Response(http.StatusBadRequest, api.Error{Message: aws.String(err.Error())})
 	}
 	user.DateCreated = user.SetCurrentDateTime()
 
-	result, err := models.NewUserAccount(ctx, user, svc)
+	result, err := models.NewUserAccount(ctx, user)
 	if err != nil {
-		logger.Error(err, &logger.Logs{Code: "DynamoDBError", Message: "Failed to create user"})
+		logger.Error(err, &logger.Logs{Code: "CreateUser", Message: "Failed to create user"})
 		return api.Response(http.StatusBadRequest, api.Error{Message: aws.String(err.Error())})
 	}
 
@@ -44,7 +44,7 @@ func CreateTask(ctx context.Context, request events.APIGatewayProxyRequest) (*ev
 	// Parse the request body of Task
 	err := response.ParseJSON(body, task)
 	if err != nil {
-		logger.Error(err, &logger.Logs{Code: "JSONError", Message: "Failed to parse request body of task"})
+		logger.Error(err, &logger.Logs{Code: "CreateTask", Message: "Failed to parse request body of task"})
 		return api.Response(http.StatusBadRequest, api.Error{Message: aws.String(err.Error())})
 	}
 
@@ -52,16 +52,17 @@ func CreateTask(ctx context.Context, request events.APIGatewayProxyRequest) (*ev
 	user_id := request.Headers["user_id"]
 	if user_id == "" {
 		err := errors.New("user_id is not set")
+		logger.Error(err, &logger.Logs{Code: "CreateTask", Message: err.Error()})
 
-		logger.Error(err, &logger.Logs{Code: "TaskRequestHeaderError", Message: err.Error()})
 		return api.Response(http.StatusBadRequest, api.Error{Message: aws.String(err.Error())})
 	}
+
 	task.UserID = user_id
 	task.DateCreated = task.SetCurrentDateTime()
 
-	result, err := models.CreateTask(ctx, task, svc)
+	result, err := models.CreateTask(ctx, task)
 	if err != nil {
-		logger.Error(err, &logger.Logs{Code: "DynamoDBError", Message: "Failed to create task"})
+		logger.Error(err, &logger.Logs{Code: "CreateTask", Message: "Failed to create task"})
 		return api.Response(http.StatusBadRequest, api.Error{Message: aws.String(err.Error())})
 	}
 

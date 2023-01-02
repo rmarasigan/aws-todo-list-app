@@ -11,13 +11,12 @@ import (
 	"time"
 
 	"github.com/aws/aws-lambda-go/events"
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/dynamodb"
-	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
-	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbiface"
-	"github.com/aws/aws-sdk-go/service/dynamodb/expression"
+	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
+	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/expression"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	"github.com/rmarasigan/aws-todo-list-app/pkg/api"
 	"github.com/rmarasigan/aws-todo-list-app/pkg/logger"
+	"github.com/rmarasigan/aws-todo-list-app/pkg/service"
 )
 
 // User contains the client account information
@@ -118,13 +117,12 @@ func (user *User) ValidateAuhtentication() string {
 }
 
 // UserResponse returns a User struct with the values of result object.
-func UserResponse(result map[string]*dynamodb.AttributeValue) (*Response, error) {
+func UserResponse(result map[string]types.AttributeValue) (*Response, error) {
 	user := new(Response)
 
 	// Unmarshal it into actual task which front-end can understand as a JSON
-	err := dynamodbattribute.UnmarshalMap(result, user)
+	err := attributevalue.UnmarshalMap(result, user)
 	if err != nil {
-		logger.Error(err, &logger.Logs{Code: "DynamoDBError", Message: "Failed to unmarshal result map to user"})
 		return nil, err
 	}
 
@@ -132,54 +130,36 @@ func UserResponse(result map[string]*dynamodb.AttributeValue) (*Response, error)
 }
 
 // GetUser gets a specific user using the id parameter.
-func GetUser(ctx context.Context, id string, svc dynamodbiface.DynamoDBAPI) (*User, error) {
+func GetUser(ctx context.Context, id string) (*User, error) {
 	// Initialze a struct and returns a pointer to an instance of User struct
 	user := new(User)
-	tablename := os.Getenv("USERS_TABLE")
+	var builder service.DynamoBuilder
+	builder.TableName = os.Getenv("USERS_TABLE")
 
 	// Create the expression to fill the input struct
 	// KeyConditionExpression: "id = user_id_value"
-	key := expression.Key("id").Equal(expression.Value(id))
+	builder.KeyExpression = expression.Key("id").Equal(expression.Value(id))
 
 	// ProjectionExpression: id, first_name, last_name, username, email
-	projection := expression.NamesList(expression.Name("id"), expression.Name("first_name"), expression.Name("last_name"), expression.Name("username"), expression.Name("email"), expression.Name("password"))
-
-	// SELECT id, first_name, last_name, username, email
-	expr, err := expression.NewBuilder().WithKeyCondition(key).WithProjection(projection).Build()
-	if err != nil {
-		logger.Error(err, &logger.Logs{Code: "ExpressionError", Message: "Faield to create expression"},
-			logger.KVP{Key: "tablename", Value: tablename})
-		return nil, err
-	}
-
-	// Build the query input parameters
-	params := &dynamodb.QueryInput{
-		TableName:                 aws.String(tablename),
-		ExpressionAttributeNames:  expr.Names(),
-		ExpressionAttributeValues: expr.Values(),
-		ProjectionExpression:      expr.Projection(),
-		KeyConditionExpression:    expr.KeyCondition(),
-	}
+	builder.Projection = expression.NamesList(expression.Name("id"), expression.Name("first_name"), expression.Name("last_name"), expression.Name("username"), expression.Name("email"), expression.Name("password"))
 
 	// Make DynamoDB query API Call
-	result, err := svc.QueryWithContext(ctx, params)
+	result, err := service.DynamoQuery(ctx, builder)
 	if err != nil {
-		logger.Error(err, &logger.Logs{Code: "DynamoDBAPIError", Message: "Failed to call dynamoDB query API"},
-			logger.KVP{Key: "tablename", Value: tablename})
+		logger.Error(err, &logger.Logs{Code: "GetUser", Message: "Failed to execute DynamoQuery"}, logger.KVP{Key: "user_id", Value: id})
 		return nil, err
 	}
 
 	// Checks if the result length is 0 to return a message of "No data found"
 	if len(result.Items) == 0 {
-		logger.Info(&logger.Logs{Code: "UserData", Message: "No data found"})
+		logger.Info(&logger.Logs{Code: "GetUser", Message: "No data found"})
 		return nil, errors.New("no user found")
 	}
 
 	// Unmarshal it into actual task which front-end can understand as a JSON
-	err = dynamodbattribute.UnmarshalMap(result.Items[0], user)
+	err = attributevalue.UnmarshalMap(result.Items[0], user)
 	if err != nil {
-		logger.Error(err, &logger.Logs{Code: "DynamoDBError", Message: "Failed to unmarshal user record"},
-			logger.KVP{Key: "tablename", Value: tablename})
+		logger.Error(err, &logger.Logs{Code: "GetUser", Message: "Failed to unmarshal user record"}, logger.KVP{Key: "user_id", Value: id})
 		return nil, err
 	}
 
@@ -187,32 +167,27 @@ func GetUser(ctx context.Context, id string, svc dynamodbiface.DynamoDBAPI) (*Us
 }
 
 // GenerateUserID generates a new ID if the current ID argument passed already exist.
-func GenerateUserID(ctx context.Context, id int, svc dynamodbiface.DynamoDBAPI) (string, error) {
+func GenerateUserID(ctx context.Context, id int) (string, error) {
 	var users []User
 	tablename := os.Getenv("USERS_TABLE")
 
-	// Build the query input parameters
-	params := &dynamodb.ScanInput{TableName: aws.String(tablename)}
-
-	// Make DynamoDB query API Call. Returns one or more items and item attributes by accessing item in a table or a secondary index.
-	result, err := svc.Scan(params)
+	result, err := service.DynamoScan(ctx, tablename)
 	if err != nil {
-		logger.Error(err, &logger.Logs{Code: "DynamoDBAPIError", Message: "Failed to call dynamoDB Query API"})
+		logger.Error(err, &logger.Logs{Code: "GenerateUserID", Message: "Failed to execute DynamoScan"})
 		return "", err
 	}
 
 	// Unmarshal it into actual user for us to iterate
-	err = dynamodbattribute.UnmarshalListOfMaps(result.Items, &users)
+	err = attributevalue.UnmarshalListOfMaps(result.Items, &users)
 	if err != nil {
-		logger.Error(err, &logger.Logs{Code: "DynamoDBError", Message: "Failed to unmarshal user records"},
-			logger.KVP{Key: "tablename", Value: tablename})
+		logger.Error(err, &logger.Logs{Code: "GenerateUserID", Message: "Failed to unmarshal user records"}, logger.KVP{Key: "user_id", Value: id})
 		return "", err
 	}
 
 	for i := 0; i < len(users); i++ {
 		userID, err := strconv.Atoi(users[i].UserID)
 		if err != nil {
-			logger.Error(err, &logger.Logs{Code: "StrIntError", Message: "Failed to convert user id string to integer"})
+			logger.Error(err, &logger.Logs{Code: "GenerateUserID", Message: "Failed to convert user id string to integer"})
 			return "", err
 		}
 
@@ -222,7 +197,7 @@ func GenerateUserID(ctx context.Context, id int, svc dynamodbiface.DynamoDBAPI) 
 			for j := (len(users) - 1); j >= 0; j-- {
 				_userID, err := strconv.Atoi(users[j].UserID)
 				if err != nil {
-					logger.Error(err, &logger.Logs{Code: "StrIntError", Message: "Failed to convert user id string to integer"})
+					logger.Error(err, &logger.Logs{Code: "GenerateUserID", Message: "Failed to convert user id string to integer"})
 					return "", err
 				}
 
@@ -241,54 +216,36 @@ func GenerateUserID(ctx context.Context, id int, svc dynamodbiface.DynamoDBAPI) 
 }
 
 // FetchUser returns a single row of user depending on the username.
-func FetchUser(ctx context.Context, username string, svc dynamodbiface.DynamoDBAPI) (*Response, error) {
+func FetchUser(ctx context.Context, username string) (*Response, error) {
 	// Initialize a struct and returns a pointer to an instance of User struct
 	var resp = new(Response)
-	tablename := os.Getenv("USERS_TABLE")
+	var builder service.DynamoBuilder
+	builder.TableName = os.Getenv("USERS_TABLE")
 
 	// Create the expression to fill the input struct
 	// FilterExpression: "username = username_value"
-	filter := expression.Name("username").Equal(expression.Value(username))
+	builder.Filter = expression.Name("username").Equal(expression.Value(username))
 
 	// ProjectionExpression: id, first_name, last_name, username, email
 	// SELECT id, first_name, last_name, username, email FROM tablename WHERE username = 'username_value'
-	projection := expression.NamesList(expression.Name("id"), expression.Name("first_name"), expression.Name("last_name"), expression.Name("username"), expression.Name("email"))
-
-	// Building expression with filter and projection to return the specific data and its columns
-	expr, err := expression.NewBuilder().WithFilter(filter).WithProjection(projection).Build()
-	if err != nil {
-		logger.Error(err, &logger.Logs{Code: "ExpressionError", Message: "Failed to create expression"},
-			logger.KVP{Key: "tablename", Value: tablename})
-		return nil, err
-	}
-
-	// Build the query input parameters
-	params := &dynamodb.ScanInput{
-		TableName:                 aws.String(tablename),
-		ExpressionAttributeNames:  expr.Names(),
-		ExpressionAttributeValues: expr.Values(),
-		FilterExpression:          expr.Filter(),
-		ProjectionExpression:      expr.Projection(),
-	}
+	builder.Projection = expression.NamesList(expression.Name("id"), expression.Name("first_name"), expression.Name("last_name"), expression.Name("username"), expression.Name("email"))
 
 	// Gets the items and returns set of attributes for the item
-	result, err := svc.Scan(params)
+	result, err := service.DynamoScanExpression(ctx, builder)
 	if err != nil {
-		logger.Error(err, &logger.Logs{Code: "GetItemError", Message: "Failed to get the user"},
-			logger.KVP{Key: "tablename", Value: tablename})
+		logger.Error(err, &logger.Logs{Code: "FetchUser", Message: "Failed to execute DynamoScanExpression"})
 		return nil, err
 	}
 
 	if len(result.Items) == 0 {
-		logger.Info(&logger.Logs{Code: "UserNotFound", Message: fmt.Sprintf("Could not find %s", username)})
+		logger.Info(&logger.Logs{Code: "FetchUser", Message: fmt.Sprintf("Could not find %s", username)})
 		return nil, nil
 	}
 
 	// Unmarshal it into actual User struct which front-end can understand as a JSON
-	err = dynamodbattribute.UnmarshalMap(result.Items[0], resp)
+	err = attributevalue.UnmarshalMap(result.Items[0], resp)
 	if err != nil {
-		logger.Error(err, &logger.Logs{Code: "DynamoDBError", Message: "Failed to unmarshal user record"},
-			logger.KVP{Key: "tablename", Value: tablename})
+		logger.Error(err, &logger.Logs{Code: "FetchUser", Message: "Failed to unmarshal user record"})
 		return nil, err
 	}
 
@@ -296,63 +253,45 @@ func FetchUser(ctx context.Context, username string, svc dynamodbiface.DynamoDBA
 }
 
 // UserAuthentication authenticates the user credentials.
-func UserAuthentication(ctx context.Context, user *User, svc dynamodbiface.DynamoDBAPI) (*Response, error) {
+func UserAuthentication(ctx context.Context, user *User) (*Response, error) {
 	var resp = new(Response)
-	tablename := os.Getenv("USERS_TABLE")
+	var builder service.DynamoBuilder
+	builder.TableName = os.Getenv("USERS_TABLE")
 	validateAuth := user.ValidateAuhtentication()
 
 	if validateAuth != "" {
 		err := errors.New(validateAuth)
+		logger.Error(err, &logger.Logs{Code: "UserAuthentication", Message: "Required fields are not entered"})
 
-		logger.Error(err, &logger.Logs{Code: "UserAuthentication", Message: "Required fields are not entered"},
-			logger.KVP{Key: "validation", Value: validateAuth})
 		return nil, err
 	}
 
 	// Create the expression to fill the input struct
 	// FilterExpression: "username = username_value AND password = password_value"
-	filter := expression.Name("username").Equal(expression.Value(user.Username)).And(expression.Name("password").Equal(expression.Value(user.Password)))
+	builder.Filter = expression.Name("username").Equal(expression.Value(user.Username)).And(expression.Name("password").Equal(expression.Value(user.Password)))
 
 	// ProjectionExpression: id, first_name, last_name, username, email
-	projection := expression.NamesList(expression.Name("id"), expression.Name("first_name"), expression.Name("last_name"), expression.Name("username"), expression.Name("email"))
+	builder.Projection = expression.NamesList(expression.Name("id"), expression.Name("first_name"), expression.Name("last_name"), expression.Name("username"), expression.Name("email"))
 
-	// SELECT id, first_name, last_name, username, email WHERE username = 'username_value' AND password = 'password_value'
-	expr, err := expression.NewBuilder().WithFilter(filter).WithProjection(projection).Build()
+	// Make DynamoDB query API Call. Returns one or more items.
+	result, err := service.DynamoScanExpression(ctx, builder)
 	if err != nil {
-		logger.Error(err, &logger.Logs{Code: "ExpressionError", Message: "Failed to create expression"},
-			logger.KVP{Key: "tablename", Value: tablename})
-		return nil, err
-	}
-
-	// Build the query input parameters
-	params := &dynamodb.ScanInput{
-		TableName:                 aws.String(tablename),
-		ExpressionAttributeNames:  expr.Names(),
-		ExpressionAttributeValues: expr.Values(),
-		FilterExpression:          expr.Filter(),
-		ProjectionExpression:      expr.Projection(),
-	}
-
-	// Make DynamoDB query API Call. Returns one or more items and item attributes by accessing them in a stable or secondary index
-	result, err := svc.Scan(params)
-	if err != nil {
-		logger.Error(err, &logger.Logs{Code: "DynamoDBAPIError", Message: "Failed to call dynamoDB Query API"},
-			logger.KVP{Key: "tablename", Value: tablename})
+		logger.Error(err, &logger.Logs{Code: "UserAuthentication", Message: "Failed to execute DynamoScanExpression"})
 		return nil, err
 	}
 
 	// Checks if there are items returned
 	if len(result.Items) == 0 {
-		logger.Info(&logger.Logs{Code: "DynamoDBAPI", Message: "No data found"},
-			logger.KVP{Key: "tablename", Value: tablename})
-		return nil, errors.New("the username or password you entered is incorrect")
+		err := errors.New("the username or password you entered is incorrect")
+		logger.Error(err, &logger.Logs{Code: "UserAuthentication", Message: "No data found"})
+
+		return nil, err
 	}
 
 	// Unmarshal a map into actual user which front-end can uderstand as a JSON
-	err = dynamodbattribute.UnmarshalMap(result.Items[0], resp)
+	err = attributevalue.UnmarshalMap(result.Items[0], resp)
 	if err != nil {
-		logger.Error(err, &logger.Logs{Code: "DynamoDBError", Message: "Failed to unmarshal user record"},
-			logger.KVP{Key: "tablename", Value: tablename})
+		logger.Error(err, &logger.Logs{Code: "UserAuthentication", Message: "Failed to unmarshal user record"})
 		return nil, err
 	}
 
@@ -360,26 +299,24 @@ func UserAuthentication(ctx context.Context, user *User, svc dynamodbiface.Dynam
 }
 
 // NewUserAccount creates a new object of user that will be saved on dynamoDB table.
-func NewUserAccount(ctx context.Context, user *User, svc dynamodbiface.DynamoDBAPI) (*events.APIGatewayProxyResponse, error) {
+func NewUserAccount(ctx context.Context, user *User) (*events.APIGatewayProxyResponse, error) {
 	tablename := os.Getenv("USERS_TABLE")
 
 	// Get the total cound of users to set UserID
-	count := ItemCount(tablename, svc) + 1
+	count := ItemCount(ctx, tablename) + 1
 
 	// Checks if ID exist and generate a new one
-	id, err := GenerateUserID(ctx, count, svc)
+	id, err := GenerateUserID(ctx, count)
 	if err != nil {
-		logger.Error(err, &logger.Logs{Code: "GenerateUserID", Message: "Failed to generate user id"},
-			logger.KVP{Key: "tablename", Value: tablename})
+		logger.Error(err, &logger.Logs{Code: "NewUserAccount", Message: "Failed to generate user id"})
 		return api.StatusBadRequest(err)
 	}
 	user.UserID = id
 
 	// Converting the record to dynamodb.AttributeValue type
-	value, err := dynamodbattribute.MarshalMap(user)
+	value, err := attributevalue.MarshalMap(user)
 	if err != nil {
-		logger.Error(err, &logger.Logs{Code: "DynamoDBError", Message: "Failed to marshal task"},
-			logger.KVP{Key: "tablename", Value: tablename})
+		logger.Error(err, &logger.Logs{Code: "NewUserAccount", Message: "Failed to marshal task"})
 		return api.StatusBadRequest(err)
 	}
 
@@ -387,38 +324,30 @@ func NewUserAccount(ctx context.Context, user *User, svc dynamodbiface.DynamoDBA
 	validate := user.Validate()
 	if validate != "" {
 		err := errors.New(validate)
+		logger.Error(err, &logger.Logs{Code: "NewUserAccount", Message: "Required fields are not entered"})
 
-		logger.Error(err, &logger.Logs{Code: "UserAccountValidation", Message: "Required fields are not entered"},
-			logger.KVP{Key: "validation", Value: validate})
 		return api.StatusBadRequest(err)
 	}
 
 	// Fetch the specific user account
-	userExist, err := FetchUser(ctx, user.Username, svc)
+	userExist, err := FetchUser(ctx, user.Username)
 	if err != nil {
-		logger.Error(err, &logger.Logs{Code: "DynamoDBError", Message: "Failed to fetch user"},
-			logger.KVP{Key: "tablename", Value: tablename})
+		logger.Error(err, &logger.Logs{Code: "NewUserAccount", Message: "Failed to fetch user"})
 		return api.StatusBadRequest(err)
 	}
 
 	// Checks if the user with the said username exist
 	if userExist != nil {
-		logger.Info(&logger.Logs{Code: "NewUserAccount", Message: "The username is already taken"})
-		return api.StatusBadRequest(errors.New("username is already taken"))
-	}
+		err := errors.New("username is already taken")
+		logger.Error(err, &logger.Logs{Code: "NewUserAccount", Message: "The username is already taken"})
 
-	// Creating the data that you want to sent to dynamoDB
-	params := &dynamodb.PutItemInput{
-		// Map of attribute name-value pairs, one for each attribute
-		Item:      value,
-		TableName: aws.String(tablename),
+		return api.StatusBadRequest(err)
 	}
 
 	// Creates a new item/object
-	_, err = svc.PutItem(params)
+	_, err = service.DynamoPutItem(ctx, tablename, value)
 	if err != nil {
-		logger.Error(err, &logger.Logs{Code: "DynamoDBError", Message: "Failed to create a new user account"},
-			logger.KVP{Key: "tablename", Value: tablename})
+		logger.Error(err, &logger.Logs{Code: "NewUserAccount", Message: "Failed to execute DynamoPutItem"})
 		return api.StatusBadRequest(err)
 	}
 
@@ -426,102 +355,83 @@ func NewUserAccount(ctx context.Context, user *User, svc dynamodbiface.DynamoDBA
 }
 
 // UpdateUserAccount will update the specific user account information.
-func UpdateUserAccount(ctx context.Context, user *User, svc dynamodbiface.DynamoDBAPI) (map[string]*dynamodb.AttributeValue, error) {
-	tablename := os.Getenv("USERS_TABLE")
+func UpdateUserAccount(ctx context.Context, user *User) (map[string]types.AttributeValue, error) {
+	var builder service.DynamoBuilder
+	builder.TableName = os.Getenv("USERS_TABLE")
 
 	// Get the specific user account
-	userExist, err := GetUser(ctx, user.UserID, svc)
+	userExist, err := GetUser(ctx, user.UserID)
 	if err != nil {
-		logger.Error(err, &logger.Logs{Code: "DynamoDBError", Message: "Failed to get user"},
-			logger.KVP{Key: "tablename", Value: tablename})
+		logger.Error(err, &logger.Logs{Code: "UpdateUserAccount", Message: "Failed to execute GetUser"})
 		return nil, err
 	}
 
 	// Check if the task exist before updating
 	if userExist == nil {
-		logger.Info(&logger.Logs{Code: "UpdateUserData", Message: "The user does not exist"})
-		return nil, errors.New("user does not exist")
+		err := errors.New("user does not exist")
+		logger.Error(err, &logger.Logs{Code: "UpdateUserAccount", Message: "The user does not exist"})
+
+		return nil, err
 	}
 
 	// Validate if fields are empty
 	user = user.ValidateEmpty(userExist)
 
+	builder.KeyAttribute = map[string]types.AttributeValue{
+		"id": &types.AttributeValueMemberS{
+			Value: user.UserID,
+		},
+	}
+
 	// Set a name-value pair for update expression
-	update := expression.Set(expression.Name("first_name"), expression.Value(user.FirstName)).
+	builder.Update = expression.Set(expression.Name("first_name"), expression.Value(user.FirstName)).
 		Set(expression.Name("last_name"), expression.Value(user.LastName)).
 		Set(expression.Name("username"), expression.Value(user.Username)).
 		Set(expression.Name("password"), expression.Value(user.Password))
 
-	// Build the expression
-	// UPDATE tablename SET first_name = first_name_value, last_name = last_name_value, ... WHERE id = user_id_value
-	expr, err := expression.NewBuilder().WithUpdate(update).Build()
-	if err != nil {
-		logger.Error(err, &logger.Logs{Code: "ExpressionError", Message: "Failed to create expression"},
-			logger.KVP{Key: "tablename", Value: tablename})
-		return nil, err
-	}
-
-	// Build the update item input parameters
-	params := &dynamodb.UpdateItemInput{
-		TableName:                 &tablename,
-		UpdateExpression:          expr.Update(),
-		ExpressionAttributeNames:  expr.Names(),
-		ExpressionAttributeValues: expr.Values(),
-		// Returns all of the attributes of the item (after the UpdateItem operation)
-		ReturnValues: aws.String("ALL_NEW"),
-		// `Key` is a required field. They key is the primary key that uniquely identifies each item in the table.
-		// An AttributeValue represents the data for an attribute.
-		Key: map[string]*dynamodb.AttributeValue{
-			"id": {S: &user.UserID},
-		},
-	}
-
 	// Updates the specific field
-	output, err := svc.UpdateItemWithContext(ctx, params)
+	result, err := service.DynamoUpdateItem(ctx, builder)
 	if err != nil {
-		logger.Error(err, &logger.Logs{Code: "DynamoDBError", Message: "Failed to update user"},
-			logger.KVP{Key: "tablename", Value: tablename})
+		logger.Error(err, &logger.Logs{Code: "UpdateUserAccount", Message: "Failed to execute DynamoUpdateItem"}, logger.KVP{Key: "user_id", Value: user.UserID})
 		return nil, err
 	}
 
-	return output.Attributes, nil
+	return result.Attributes, nil
 }
 
 // DeleteAccount deletes a specific user based on the id given.
-func DeleteAccount(ctx context.Context, id string, svc dynamodbiface.DynamoDBAPI) (map[string]*dynamodb.AttributeValue, error) {
-	tablename := os.Getenv("USERS_TABLE")
+func DeleteAccount(ctx context.Context, id string) (map[string]types.AttributeValue, error) {
+	var builder service.DynamoBuilder
+	builder.TableName = os.Getenv("USERS_TABLE")
 
 	// Get the specific user
-	userExist, err := GetUser(ctx, id, svc)
+	userExist, err := GetUser(ctx, id)
 	if err != nil {
-		logger.Error(err, &logger.Logs{Code: "DynamoDBError", Message: "Failed to get user"},
-			logger.KVP{Key: "tablename", Value: tablename})
+		logger.Error(err, &logger.Logs{Code: "DeleteAccount", Message: "Failed to get user"})
 		return nil, err
 	}
 
 	// Check if the use exist before deleting
 	if userExist == nil {
-		logger.Error(err, &logger.Logs{Code: "DeleteAccount", Message: "The user does not exist"},
-			logger.KVP{Key: "tablename", Value: tablename})
-		return nil, errors.New("user does not exist")
+		err := errors.New("user does not exist")
+		logger.Error(err, &logger.Logs{Code: "DeleteAccount", Message: "The user does not exist"}, logger.KVP{Key: "user_id", Value: id})
+
+		return nil, err
 	}
 
 	// Create a delete query based on the parameter
-	params := &dynamodb.DeleteItemInput{
-		TableName:    aws.String(tablename),
-		ReturnValues: aws.String("ALL_OLD"),
-		Key: map[string]*dynamodb.AttributeValue{
-			"id": {S: aws.String(id)},
+	builder.KeyAttribute = map[string]types.AttributeValue{
+		"id": &types.AttributeValueMemberS{
+			Value: id,
 		},
 	}
 
 	// Deletes a single item in a table by primary key
-	output, err := svc.DeleteItem(params)
+	result, err := service.DynamoDeleteItem(ctx, builder)
 	if err != nil {
-		logger.Error(err, &logger.Logs{Code: "DynamoDBError", Message: "Failed to delete user"},
-			logger.KVP{Key: "tablename", Value: tablename})
+		logger.Error(err, &logger.Logs{Code: "DeleteAccount", Message: "Failed to delete user"}, logger.KVP{Key: "user_id", Value: id})
 		return nil, err
 	}
 
-	return output.Attributes, nil
+	return result.Attributes, nil
 }

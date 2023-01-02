@@ -11,13 +11,12 @@ import (
 	"time"
 
 	"github.com/aws/aws-lambda-go/events"
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/dynamodb"
-	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
-	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbiface"
-	"github.com/aws/aws-sdk-go/service/dynamodb/expression"
+	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
+	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/expression"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	"github.com/rmarasigan/aws-todo-list-app/pkg/api"
 	"github.com/rmarasigan/aws-todo-list-app/pkg/logger"
+	"github.com/rmarasigan/aws-todo-list-app/pkg/service"
 )
 
 const (
@@ -26,10 +25,10 @@ const (
 	DONE        = "Done"
 )
 
-// statusMap maps all the task status
+// StatusMap maps all the task status
 //
 // 1: Backlog || 2: In Progress || 3: Done
-var statusMap = map[int]string{
+var StatusMap = map[int]string{
 	1: BACKLOG,
 	2: IN_PROGRESS,
 	3: DONE,
@@ -52,13 +51,13 @@ func (t *Task) SetCurrentDateTime() string {
 }
 
 // TaskResponse returns a Task struct with the values of result object.
-func TaskResponse(result map[string]*dynamodb.AttributeValue) (*Task, error) {
+func TaskResponse(result map[string]types.AttributeValue) (*Task, error) {
 	task := new(Task)
 
 	// Unmarshal it into actual task which front-end can understand as a JSON
-	err := dynamodbattribute.UnmarshalMap(result, task)
+	err := attributevalue.UnmarshalMap(result, task)
 	if err != nil {
-		logger.Error(err, &logger.Logs{Code: "DynamoDBError", Message: "Failed to unmarshal result map to task"})
+		logger.Error(err, &logger.Logs{Code: "TaskResponse", Message: "Failed to unmarshal result map to task"})
 		return nil, err
 	}
 
@@ -103,55 +102,36 @@ func (task *Task) Validate() string {
 }
 
 // GetTask gets a specifc task using the id parameter.
-func GetTask(ctx context.Context, task_id string, svc dynamodbiface.DynamoDBAPI) (*Task, error) {
+func GetTask(ctx context.Context, task_id string) (*Task, error) {
 	// Initialize a struct and returns a pointer to an instance of Task struct
 	task := new(Task)
-	tablename := os.Getenv("TASKS_TABLE")
+	var builder service.DynamoBuilder
+	builder.TableName = os.Getenv("TASKS_TABLE")
 
 	// Create the expression to fill the input struct
 	// KeyConditionExpression: "id = task_id_value"
-	key := expression.Key("id").Equal(expression.Value(task_id))
+	builder.KeyExpression = expression.Key("id").Equal(expression.Value(task_id))
 
 	// ProjectionExpression: id, title, description, status, date_created
-	projection := expression.NamesList(expression.Name("id"), expression.Name("title"), expression.Name("description"), expression.Name("status"), expression.Name("date_created"))
-
-	// SELECT id, title, description, status, date_created WHERE id = task_id_value
-	expr, err := expression.NewBuilder().WithKeyCondition(key).WithProjection(projection).Build()
-	if err != nil {
-		logger.Error(err, &logger.Logs{Code: "ExpressionError", Message: "Failed to create expression"},
-			logger.KVP{Key: "tablename", Value: aws.String(tablename)})
-		return nil, err
-	}
-
-	// Build the query input parameters
-	params := &dynamodb.QueryInput{
-		TableName:                 aws.String(tablename),
-		ExpressionAttributeNames:  expr.Names(),
-		ExpressionAttributeValues: expr.Values(),
-		ProjectionExpression:      expr.Projection(),
-		KeyConditionExpression:    expr.KeyCondition(),
-	}
+	builder.Projection = expression.NamesList(expression.Name("id"), expression.Name("title"), expression.Name("description"), expression.Name("status"), expression.Name("date_created"))
 
 	// Make DynamoDB query API Call
-	result, err := svc.QueryWithContext(ctx, params)
+	result, err := service.DynamoQuery(ctx, builder)
 	if err != nil {
-		logger.Error(err, &logger.Logs{Code: "DynamoDBAPIError", Message: "Failed to call dynamoDB query API"},
-			logger.KVP{Key: "tablename", Value: tablename})
+		logger.Error(err, &logger.Logs{Code: "GetTask", Message: "Failed to execute DynamoQuery"}, logger.KVP{Key: "task_id", Value: task_id})
 		return nil, err
 	}
 
 	// Checks if the result length is 0 to return a message of "No data found"
 	if len(result.Items) == 0 {
-		logger.Info(&logger.Logs{Code: "TaskData", Message: "No data found"},
-			logger.KVP{Key: "tablename", Value: tablename})
+		logger.Info(&logger.Logs{Code: "GetTask", Message: "No data found"}, logger.KVP{Key: "task_id", Value: task_id})
 		return nil, nil
 	}
 
 	// Unmarshal it into actual task which front-end can understand as a JSON
-	err = dynamodbattribute.UnmarshalMap(result.Items[0], task)
+	err = attributevalue.UnmarshalMap(result.Items[0], task)
 	if err != nil {
-		logger.Error(err, &logger.Logs{Code: "DynamoDBError", Message: "Failed to unmarshal task record"},
-			logger.KVP{Key: "tablename", Value: tablename})
+		logger.Error(err, &logger.Logs{Code: "GetTask", Message: "Failed to unmarshal task record"})
 		return nil, err
 	}
 
@@ -159,32 +139,24 @@ func GetTask(ctx context.Context, task_id string, svc dynamodbiface.DynamoDBAPI)
 }
 
 // GenerateTaskID generates a new ID if the current ID argument passed already exist.
-func GenerateTaskID(ctx context.Context, id int, svc dynamodbiface.DynamoDBAPI) (string, error) {
+func GenerateTaskID(ctx context.Context, id int) (string, error) {
 	var tasks []Task
 	tablename := os.Getenv("TASKS_TABLE")
 
-	// Build the query input parameters
-	params := &dynamodb.ScanInput{TableName: aws.String(tablename)}
-
-	// Make DynamoDB query API Call. Returns one or more items and item attributes by accessing item in a table or a secondary index.
-	result, err := svc.Scan(params)
+	result, err := service.DynamoScan(ctx, tablename)
 	if err != nil {
-		logger.Error(err, &logger.Logs{Code: "DynamoDBAPIError", Message: "Failed to call dynamoDB Query API"})
 		return "", err
 	}
 
 	// Unmarshal it into actual task for us to iterate
-	err = dynamodbattribute.UnmarshalListOfMaps(result.Items, &tasks)
+	err = attributevalue.UnmarshalListOfMaps(result.Items, &tasks)
 	if err != nil {
-		logger.Error(err, &logger.Logs{Code: "DynamoDBError", Message: "Failed to unmarshal task records"},
-			logger.KVP{Key: "tablename", Value: tablename})
 		return "", err
 	}
 
 	for i := 0; i < len(tasks); i++ {
 		taskID, err := strconv.Atoi(tasks[i].TaskID)
 		if err != nil {
-			logger.Error(err, &logger.Logs{Code: "StrIntError", Message: "Failed to convert task id string to integer"})
 			return "", err
 		}
 
@@ -194,7 +166,6 @@ func GenerateTaskID(ctx context.Context, id int, svc dynamodbiface.DynamoDBAPI) 
 			for j := (len(tasks) - 1); j >= 0; j-- {
 				_taskID, err := strconv.Atoi(tasks[j].TaskID)
 				if err != nil {
-					logger.Error(err, &logger.Logs{Code: "StrIntError", Message: "Failed to convert task id string to integer"})
 					return "", err
 				}
 
@@ -212,17 +183,16 @@ func GenerateTaskID(ctx context.Context, id int, svc dynamodbiface.DynamoDBAPI) 
 }
 
 // CreateTask creates a new object of task that will be saved on dynamoDB table.
-func CreateTask(ctx context.Context, task *Task, svc dynamodbiface.DynamoDBAPI) (*events.APIGatewayProxyResponse, error) {
+func CreateTask(ctx context.Context, task *Task) (*events.APIGatewayProxyResponse, error) {
 	tablename := os.Getenv("TASKS_TABLE")
 
 	// Get the total count of tasks to set TaskID
-	count := ItemCount(tablename, svc) + 1
+	count := ItemCount(ctx, tablename) + 1
 
 	// Checks if ID exist and generate a new one
-	id, err := GenerateTaskID(ctx, count, svc)
+	id, err := GenerateTaskID(ctx, count)
 	if err != nil {
-		logger.Error(err, &logger.Logs{Code: "GenerateTaskID", Message: "Failed to generate task id"},
-			logger.KVP{Key: "tablename", Value: tablename})
+		logger.Error(err, &logger.Logs{Code: "CreateTask", Message: "Failed to GenerateTaskID"})
 		return api.StatusBadRequest(err)
 	}
 	task.TaskID = id
@@ -230,18 +200,17 @@ func CreateTask(ctx context.Context, task *Task, svc dynamodbiface.DynamoDBAPI) 
 	// Convert status string to int
 	taskStatus, err := strconv.Atoi(task.Status)
 	if err != nil {
-		logger.Error(err, &logger.Logs{Code: "StrIntError", Message: "Failed to convert task status string to integer"})
+		logger.Error(err, &logger.Logs{Code: "CreateTask", Message: "Failed to convert task status string to integer"})
 		return api.StatusBadRequest(err)
 	}
 
 	// Set task status value
-	task.Status = statusMap[taskStatus]
+	task.Status = StatusMap[taskStatus]
 
 	// Converting the record to dynamodb.AttributeValue type
-	value, err := dynamodbattribute.MarshalMap(task)
+	value, err := attributevalue.MarshalMap(task)
 	if err != nil {
-		logger.Error(err, &logger.Logs{Code: "DynamoDBError", Message: "Failed to marshal task"},
-			logger.KVP{Key: "tablename", Value: tablename})
+		logger.Error(err, &logger.Logs{Code: "CreateTask", Message: "Failed to marshal task"})
 		return api.StatusBadRequest(err)
 	}
 
@@ -249,23 +218,15 @@ func CreateTask(ctx context.Context, task *Task, svc dynamodbiface.DynamoDBAPI) 
 	validate := task.Validate()
 	if validate != "" {
 		err := errors.New(validate)
+		logger.Error(err, &logger.Logs{Code: "CreateTask", Message: "Required fields are not entered"})
 
-		logger.Error(err, &logger.Logs{Code: "NewTaskValidation", Message: "Required fields are not entered"},
-			logger.KVP{Key: "validation", Value: validate})
 		return api.StatusBadRequest(err)
 	}
 
-	// Creating the data that you want to send to dynamoDB
-	params := &dynamodb.PutItemInput{
-		// Map of attribute name-value pairs, one for each attribute
-		Item:      value,
-		TableName: aws.String(tablename),
-	}
-
 	// Creates a new item
-	_, err = svc.PutItem(params)
+	_, err = service.DynamoPutItem(ctx, tablename, value)
 	if err != nil {
-		logger.Error(err, &logger.Logs{Code: "DynamoDBError", Message: "Failed to create a new task"})
+		logger.Error(err, &logger.Logs{Code: "CreateTask", Message: "Failed to execute DynamoPutItem"})
 		return api.StatusBadRequest(err)
 	}
 
@@ -273,55 +234,36 @@ func CreateTask(ctx context.Context, task *Task, svc dynamodbiface.DynamoDBAPI) 
 }
 
 // FetchTasks returns list of tasks of the said user.
-func FetchTasks(ctx context.Context, user_id string, svc dynamodbiface.DynamoDBAPI) (*[]Task, error) {
+func FetchTasks(ctx context.Context, user_id string) (*[]Task, error) {
 	// Initialize a struct and returns a pointer to an instance of Task struct
 	tasks := new([]Task)
-	tablename := os.Getenv("TASKS_TABLE")
+	var builder service.DynamoBuilder
+	builder.TableName = os.Getenv("TASKS_TABLE")
 
 	// Create the expression to fill the input struct
 	// FilterExpression: "user_id = user_id_value"
-	filter := expression.Name("user_id").Equal(expression.Value(user_id))
+	builder.Filter = expression.Name("user_id").Equal(expression.Value(user_id))
 
 	// ProjectionExpression: id, title, description, status, date_created
-	projection := expression.NamesList(expression.Name("id"), expression.Name("title"), expression.Name("description"), expression.Name("status"), expression.Name("date_created"))
+	builder.Projection = expression.NamesList(expression.Name("id"), expression.Name("title"), expression.Name("description"), expression.Name("status"), expression.Name("date_created"))
 
-	// SELECT id, title, description, status, date_created FROM tablename WHERE user_id = 'user_id_value'
-	expr, err := expression.NewBuilder().WithFilter(filter).WithProjection(projection).Build()
+	// Make DynamoDB API Call. Returns one or more items.
+	result, err := service.DynamoScanExpression(ctx, builder)
 	if err != nil {
-		logger.Error(err, &logger.Logs{Code: "ExpressionError", Message: "Failed to create expression"},
-			logger.KVP{Key: "tablename", Value: tablename})
-		return nil, err
-	}
-
-	// Build the query input parameters
-	params := &dynamodb.ScanInput{
-		TableName:                 aws.String(tablename),
-		ExpressionAttributeNames:  expr.Names(),
-		ExpressionAttributeValues: expr.Values(),
-		FilterExpression:          expr.Filter(),
-		ProjectionExpression:      expr.Projection(),
-	}
-
-	// Make DynamoDB query API Call. Returns one or more items and item attributes by accessing item in a table or a secondary index
-	result, err := svc.Scan(params)
-	if err != nil {
-		logger.Error(err, &logger.Logs{Code: "DynamoDBAPIError", Message: "Failed to call dynamoDB Query API"},
-			logger.KVP{Key: "tablename", Value: tablename})
+		logger.Error(err, &logger.Logs{Code: "FetchTasks", Message: "Failed to execute DynamoScanExpression"})
 		return nil, err
 	}
 
 	// Checks if there are items returned
 	if len(result.Items) == 0 {
-		logger.Info(&logger.Logs{Code: "DynamoDBAPI", Message: "No data found"},
-			logger.KVP{Key: "tablename", Value: tablename})
+		logger.Info(&logger.Logs{Code: "FetchTasks", Message: "No data found"})
 		return nil, nil
 	}
 
 	// Unmarshal a list of maps into actual task which front-end can understand as a JSON
-	err = dynamodbattribute.UnmarshalListOfMaps(result.Items, tasks)
+	err = attributevalue.UnmarshalListOfMaps(result.Items, tasks)
 	if err != nil {
-		logger.Error(err, &logger.Logs{Code: "DynamoDBError", Message: "Failed to unmarshal tasks record"},
-			logger.KVP{Key: "tablename", Value: tablename})
+		logger.Error(err, &logger.Logs{Code: "FetchTasks", Message: "Failed to unmarshal tasks record"})
 		return nil, err
 	}
 
@@ -329,54 +271,36 @@ func FetchTasks(ctx context.Context, user_id string, svc dynamodbiface.DynamoDBA
 }
 
 // FilterTasks returns a list of tasks of the said user depending on the status or progress of the Task.
-func FilterTasks(ctx context.Context, user_id string, status int, svc dynamodbiface.DynamoDBAPI) (*[]Task, error) {
+func FilterTasks(ctx context.Context, user_id string, status int) (*[]Task, error) {
 	// Initialize a struct and returns a pointer to an instance of Task struct
 	tasks := new([]Task)
-	tablename := os.Getenv("TASKS_TABLE")
+	var builder service.DynamoBuilder
+	builder.TableName = os.Getenv("TASKS_TABLE")
 
 	// Create the expression to fill the input struct
 	// FilterExpression: "user_id = user_id_value AND status = status_value"
-	filter := expression.Name("user_id").Equal(expression.Value(user_id)).And(expression.Name("status").Equal(expression.Value(statusMap[status])))
+	builder.Filter = expression.Name("user_id").Equal(expression.Value(user_id)).And(expression.Name("status").Equal(expression.Value(StatusMap[status])))
 
 	// ProjectionExpression: id, title, description, status, date_created
-	projection := expression.NamesList(expression.Name("id"), expression.Name("title"), expression.Name("description"), expression.Name("status"), expression.Name("date_created"))
+	builder.Projection = expression.NamesList(expression.Name("id"), expression.Name("title"), expression.Name("description"), expression.Name("status"), expression.Name("date_created"))
 
-	// SELECT user_id, title, description, status, date_created FROM tablename WHERE status = 'status_value'
-	expr, err := expression.NewBuilder().WithFilter(filter).WithProjection(projection).Build()
+	// Make DynamoDB query API Call. Returns one or more.
+	result, err := service.DynamoScanExpression(ctx, builder)
 	if err != nil {
-		logger.Error(err, &logger.Logs{Code: "ExpressionError", Message: "Failed to create expression"},
-			logger.KVP{Key: "tablename", Value: aws.String(tablename)})
-		return nil, err
-	}
-
-	// Build the query input parameters
-	params := &dynamodb.ScanInput{
-		TableName:                 aws.String(tablename),
-		ExpressionAttributeNames:  expr.Names(),
-		ExpressionAttributeValues: expr.Values(),
-		FilterExpression:          expr.Filter(),
-		ProjectionExpression:      expr.Projection(),
-	}
-
-	// Make DynamoDB query API Call. Returns one or more items and item attributes by accessing item in a table or a secondary index
-	result, err := svc.Scan(params)
-	if err != nil {
-		logger.Error(err, &logger.Logs{Code: "DynamoDBAPIError", Message: "Failed to call dynamoDB Query API"},
-			logger.KVP{Key: "tablename", Value: tablename})
+		logger.Error(err, &logger.Logs{Code: "FilterTasks", Message: "Failed to execute DynamoScanExpression"}, logger.KVP{Key: "user_id", Value: user_id}, logger.KVP{Key: "status", Value: status})
 		return nil, err
 	}
 
 	// Checks if there are items returned
 	if len(result.Items) == 0 {
-		logger.Info(&logger.Logs{Code: "DynamoDBAPI", Message: "No data found"}, logger.KVP{Key: "tablename", Value: tablename})
+		logger.Info(&logger.Logs{Code: "FilterTasks", Message: "No data found"})
 		return nil, nil
 	}
 
 	// Unmarshal a list of maps into actual task which front-end can understand as a JSON
-	err = dynamodbattribute.UnmarshalListOfMaps(result.Items, tasks)
+	err = attributevalue.UnmarshalListOfMaps(result.Items, tasks)
 	if err != nil {
-		logger.Error(err, &logger.Logs{Code: "DynamoDBError", Message: "Failed to unmashal tasks record"},
-			logger.KVP{Key: "tablename", Value: tablename})
+		logger.Error(err, &logger.Logs{Code: "FilterTasks", Message: "Failed to unmashal tasks record"}, logger.KVP{Key: "user_id", Value: user_id}, logger.KVP{Key: "status", Value: status})
 		return nil, err
 	}
 
@@ -384,21 +308,20 @@ func FilterTasks(ctx context.Context, user_id string, status int, svc dynamodbif
 }
 
 // UpdateTask will update the specific Task information.
-func UpdateTask(ctx context.Context, id string, task *Task, svc dynamodbiface.DynamoDBAPI) (map[string]*dynamodb.AttributeValue, error) {
-	tablename := os.Getenv("TASKS_TABLE")
+func UpdateTask(ctx context.Context, id string, task *Task) (map[string]types.AttributeValue, error) {
+	var builder service.DynamoBuilder
+	builder.TableName = os.Getenv("TASKS_TABLE")
 
 	// Get the specific task
-	taskExist, err := GetTask(ctx, id, svc)
+	taskExist, err := GetTask(ctx, id)
 	if err != nil {
-		logger.Error(err, &logger.Logs{Code: "DynamoDBError", Message: "Failed to get task"},
-			logger.KVP{Key: "tablename", Value: tablename})
+		logger.Error(err, &logger.Logs{Code: "UpdateTask", Message: "Failed to execute GetTask"}, logger.KVP{Key: "task_id", Value: id})
 		return nil, err
 	}
 
 	// Check if the task exist before updating
 	if taskExist == nil {
-		logger.Info(&logger.Logs{Code: "UpdateTaskData", Message: "The task does not exist"},
-			logger.KVP{Key: "tablename", Value: tablename})
+		logger.Info(&logger.Logs{Code: "UpdateTask", Message: "The task does not exist"}, logger.KVP{Key: "task_id", Value: id})
 		return nil, nil
 	}
 
@@ -408,127 +331,96 @@ func UpdateTask(ctx context.Context, id string, task *Task, svc dynamodbiface.Dy
 	// Convert status string to int
 	taskStatus, err := strconv.Atoi(task.Status)
 	if err != nil {
-		logger.Info(&logger.Logs{Code: "UpdateTaskData", Message: "Cannot convert task status string to int"},
-			logger.KVP{Key: "tablename", Value: tablename})
-		return nil, errors.New("failed to convert status to int")
+		err := errors.New("failed to convert status to int")
+		logger.Error(err, &logger.Logs{Code: "UpdateTask", Message: "Cannot convert task status string to int"}, logger.KVP{Key: "task_id", Value: id})
+
+		return nil, err
 	}
 
 	// Set task status value
-	task.Status = statusMap[taskStatus]
+	task.Status = StatusMap[taskStatus]
+
+	builder.KeyAttribute = map[string]types.AttributeValue{
+		"id": &types.AttributeValueMemberS{
+			Value: id,
+		},
+	}
 
 	// Set a name-value pair for update expression
-	update := expression.Set(expression.Name("title"), expression.Value(task.Title)).
+	builder.Update = expression.Set(expression.Name("title"), expression.Value(task.Title)).
 		Set(expression.Name("description"), expression.Value(task.Description)).
 		Set(expression.Name("status"), expression.Value(task.Status)).
 		Set(expression.Name("date_updated"), expression.Value(task.SetCurrentDateTime()))
 
-	// Build the expression.
-	// UPDATE tablename SET title = title_value, description = description_value, ... WHERE id = id_value
-	expr, err := expression.NewBuilder().WithUpdate(update).Build()
-	if err != nil {
-		logger.Error(err, &logger.Logs{Code: "ExpressionError", Message: "Failed to create expression"},
-			logger.KVP{Key: "tablename", Value: tablename})
-		return nil, err
-	}
-
-	// Build the update item input parameters
-	params := &dynamodb.UpdateItemInput{
-		TableName:                 &tablename,
-		UpdateExpression:          expr.Update(),
-		ExpressionAttributeNames:  expr.Names(),
-		ExpressionAttributeValues: expr.Values(),
-		// Returns all of the attributes of the item (after the UpdateItem operation)
-		ReturnValues: aws.String("ALL_NEW"),
-		// `Key` is a required field. They key is the primary key that uniquely identifies each item in the table.
-		// An AttributeValue represents the data for an attribute.
-		Key: map[string]*dynamodb.AttributeValue{
-			"id": {S: &id},
-		},
-	}
-
 	// Updates the specific field
-	output, err := svc.UpdateItemWithContext(ctx, params)
+	result, err := service.DynamoUpdateItem(ctx, builder)
 	if err != nil {
-		logger.Error(err, &logger.Logs{Code: "DynamoDBError", Message: "Failed to update task"},
-			logger.KVP{Key: "tablename", Value: tablename})
+		logger.Error(err, &logger.Logs{Code: "UpdateTask", Message: "Failed to execute DynamoUpdateItem"})
 		return nil, err
 	}
 
-	return output.Attributes, nil
+	return result.Attributes, nil
 }
 
 // DeleteTask deletes a specific task based on the id given.
-func DeleteTask(ctx context.Context, id string, svc dynamodbiface.DynamoDBAPI) (map[string]*dynamodb.AttributeValue, error) {
-	tablename := os.Getenv("TASKS_TABLE")
+func DeleteTask(ctx context.Context, id string) (map[string]types.AttributeValue, error) {
+	var builder service.DynamoBuilder
+	builder.TableName = os.Getenv("TASKS_TABLE")
 
 	// Get the specific task
-	taskExist, err := GetTask(ctx, id, svc)
+	taskExist, err := GetTask(ctx, id)
 	if err != nil {
-		logger.Error(err, &logger.Logs{Code: "DynamoDBError", Message: "Failed to get task"},
-			logger.KVP{Key: "tablename", Value: tablename})
+		logger.Error(err, &logger.Logs{Code: "DeleteTask", Message: "Failed to get task"})
 		return nil, err
 	}
 
 	// Check if the task exist before deleting
 	if taskExist == nil {
 		err := errors.New("task does not exist")
+		logger.Error(err, &logger.Logs{Code: "DeleteTask", Message: "The task does not exist"})
 
-		logger.Error(err, &logger.Logs{Code: "DeleteTaskData", Message: "The task does not exist"},
-			logger.KVP{Key: "tablename", Value: tablename})
 		return nil, err
 	}
 
-	// Create a delete query based on the parameter
-	params := &dynamodb.DeleteItemInput{
-		TableName: aws.String(tablename),
-		// Returns all of the attributes of the item (before the DeleteItem operation)
-		ReturnValues: aws.String("ALL_OLD"),
-		// `Key` is a required field. They key is the primary key that uniquely identifies each item in the table.
-		// An AttributeValue represents the data for an attribute.
-		Key: map[string]*dynamodb.AttributeValue{
-			"id": {S: aws.String(id)},
+	builder.KeyAttribute = map[string]types.AttributeValue{
+		"id": &types.AttributeValueMemberS{
+			Value: id,
 		},
 	}
 
 	// Deletes a single item in a table by primary key
-	output, err := svc.DeleteItem(params)
+	result, err := service.DynamoDeleteItem(ctx, builder)
 	if err != nil {
-		logger.Error(err, &logger.Logs{Code: "DynamoDBError", Message: "Failed to delete task"},
-			logger.KVP{Key: "tablename", Value: tablename})
+		logger.Error(err, &logger.Logs{Code: "DeleteTask", Message: "Failed to delete task"}, logger.KVP{Key: "task_id", Value: id})
 		return nil, err
 	}
 
-	return output.Attributes, nil
+	return result.Attributes, nil
 }
 
 // DeleteUserTasks deletes all tasks related to the user account that is being deleted.
-func DeleteUserTasks(ctx context.Context, user_id string, svc dynamodbiface.DynamoDBAPI) (*events.APIGatewayProxyResponse, error) {
-	tablename := os.Getenv("TASKS_TABLE")
+func DeleteUserTasks(ctx context.Context, user_id string) (*events.APIGatewayProxyResponse, error) {
+	var builder service.DynamoBuilder
+	builder.TableName = os.Getenv("TASKS_TABLE")
 
-	tasks, err := FetchTasks(ctx, user_id, svc)
+	tasks, err := FetchTasks(ctx, user_id)
 	if err != nil {
-		logger.Error(err, &logger.Logs{Code: "DynamoDBError", Message: "Failed to fetch all tasks"},
-			logger.KVP{Key: "tablename", Value: tablename})
+		logger.Error(err, &logger.Logs{Code: "DeleteUserTasks", Message: "Failed to fetch all tasks"})
 		return api.StatusBadRequest(err)
 	}
 
 	// Loop over the tasks the user has and delete one by one
 	for _, task := range *tasks {
-		// Create a delete query based on the parameter
-		params := &dynamodb.DeleteItemInput{
-			TableName: aws.String(tablename),
-			// `Key` is a required field. The key is the primary key that uniquely identifies each item in the table.
-			// An AttributeValue represents the data for an attribute.
-			Key: map[string]*dynamodb.AttributeValue{
-				"id": {S: aws.String(task.TaskID)},
+		builder.KeyAttribute = map[string]types.AttributeValue{
+			"id": &types.AttributeValueMemberS{
+				Value: task.TaskID,
 			},
 		}
 
 		// Deletes all tasks related to the user account
-		_, err = svc.DeleteItem(params)
+		_, err = service.DynamoDeleteItem(ctx, builder)
 		if err != nil {
-			logger.Error(err, &logger.Logs{Code: "DynamoDBError", Message: "Failed to delete all tasks"},
-				logger.KVP{Key: "tablename", Value: tablename})
+			logger.Error(err, &logger.Logs{Code: "DeleteUserTasks", Message: "Failed to delete all tasks"})
 			return api.StatusBadRequest(err)
 		}
 	}

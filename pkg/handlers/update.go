@@ -22,8 +22,8 @@ func UpdateUser(ctx context.Context, request events.APIGatewayProxyRequest) (*ev
 	// Checks if the user_id value is set
 	if user_id == "" {
 		err := errors.New("user_id is not set")
+		logger.Error(err, &logger.Logs{Code: "UpdateUser", Message: err.Error()})
 
-		logger.Error(err, &logger.Logs{Code: "UserRequestHeaderError", Message: err.Error()})
 		return api.Response(http.StatusBadRequest, api.Error{Message: aws.String(err.Error())})
 	}
 
@@ -33,22 +33,23 @@ func UpdateUser(ctx context.Context, request events.APIGatewayProxyRequest) (*ev
 	// Parse the request body of User
 	err := response.ParseJSON(body, user)
 	if err != nil {
-		logger.Error(err, &logger.Logs{Code: "JSONError", Message: fmt.Sprintf("Failed to parse request body of user %s", user_id)})
+		logger.Error(err, &logger.Logs{Code: "UpdateUser", Message: fmt.Sprintf("Failed to parse request body of user %s", user_id)})
 		return api.Response(http.StatusBadRequest, api.Error{Message: aws.String(err.Error())})
 	}
+
 	user.UserID = user_id
 
-	// Result will return the specific user
-	result, err := models.UpdateUserAccount(ctx, user, svc)
+	// Result will return the updated user account information
+	result, err := models.UpdateUserAccount(ctx, user)
 	if err != nil {
-		logger.Error(err, &logger.Logs{Code: "DynamoDBError", Message: fmt.Sprintf("Failed to update user %s", user_id)})
+		logger.Error(err, &logger.Logs{Code: "UpdateUser", Message: fmt.Sprintf("Failed to update user %s", user_id)})
 		return api.Response(http.StatusBadRequest, api.Error{Message: aws.String(err.Error())})
 	}
 
 	// Returns a user response in JSON format
 	userResponse, err := models.UserResponse(result)
 	if err != nil {
-		logger.Error(err, &logger.Logs{Code: "DynamoDBError", Message: "Failed umarshal user response"})
+		logger.Error(err, &logger.Logs{Code: "UpdateUser", Message: "Failed umarshal user response"})
 		return api.Response(http.StatusBadRequest, api.Error{Message: aws.String(err.Error())})
 	}
 
@@ -71,21 +72,21 @@ func UpdateTask(ctx context.Context, request events.APIGatewayProxyRequest) (*ev
 	// Parse the request body of Task
 	err := response.ParseJSON(body, task)
 	if err != nil {
-		logger.Error(err, &logger.Logs{Code: "JSONError", Message: fmt.Sprintf("Failed to parse request body of task %s", taskID)})
+		logger.Error(err, &logger.Logs{Code: "UpdateTask", Message: fmt.Sprintf("Failed to parse request body of task %s", taskID)})
 		return api.Response(http.StatusBadRequest, api.Error{Message: aws.String(err.Error())})
 	}
 
 	// Result will return the specific task
-	result, err := models.UpdateTask(ctx, taskID, task, svc)
+	result, err := models.UpdateTask(ctx, taskID, task)
 	if err != nil {
-		logger.Error(err, &logger.Logs{Code: "DynamoDBError", Message: fmt.Sprintf("Failed to update task %s", taskID)})
+		logger.Error(err, &logger.Logs{Code: "UpdateTask", Message: fmt.Sprintf("Failed to update task %s", taskID)})
 		return api.Response(http.StatusBadRequest, api.Error{Message: aws.String(err.Error())})
 	}
 
 	// Returns a task response in JSON format
 	taskResponse, err := models.TaskResponse(result)
 	if err != nil {
-		logger.Error(err, &logger.Logs{Code: "DynamoDBError", Message: "Failed umarshal task response"})
+		logger.Error(err, &logger.Logs{Code: "UpdateTask", Message: "Failed umarshal task response"})
 		return api.Response(http.StatusBadRequest, api.Error{Message: aws.String(err.Error())})
 	}
 

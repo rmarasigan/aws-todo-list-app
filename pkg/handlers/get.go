@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"net/http"
-	"os"
 	"strconv"
 
 	"github.com/aws/aws-lambda-go/events"
@@ -16,8 +15,6 @@ import (
 
 // GetUser gets the specifc user information
 func GetUser(ctx context.Context, request events.APIGatewayProxyRequest) (*events.APIGatewayProxyResponse, error) {
-	tablename := os.Getenv("USERS_TABLE")
-
 	// Gets the request parameter
 	username := request.QueryStringParameters["username"]
 
@@ -26,10 +23,9 @@ func GetUser(ctx context.Context, request events.APIGatewayProxyRequest) (*event
 	}
 
 	// Result will return the specific user
-	result, err := models.FetchUser(ctx, username, svc)
+	result, err := models.FetchUser(ctx, username)
 	if err != nil {
-		logger.Error(err, &logger.Logs{Code: "DynamoDBError", Message: "Failed to fetch user"},
-			logger.KVP{Key: "tablename", Value: tablename})
+		logger.Error(err, &logger.Logs{Code: "GetUser", Message: "Failed to fetch user"}, logger.KVP{Key: "username", Value: username})
 		return api.StatusBadRequest(err)
 	}
 
@@ -44,13 +40,13 @@ func LoginUser(ctx context.Context, request events.APIGatewayProxyRequest) (*eve
 	// Parse the request body of User
 	err := response.ParseJSON(body, user)
 	if err != nil {
-		logger.Error(err, &logger.Logs{Code: "JSONError", Message: "Failed to parse request body of user"})
+		logger.Error(err, &logger.Logs{Code: "LoginUser", Message: "Failed to parse request body of user"})
 		return api.StatusBadRequest(err)
 	}
 
-	result, err := models.UserAuthentication(ctx, user, svc)
+	result, err := models.UserAuthentication(ctx, user)
 	if err != nil {
-		logger.Error(err, &logger.Logs{Code: "DynamoDBEror", Message: "Failed to authenticate user"})
+		logger.Error(err, &logger.Logs{Code: "LoginUser", Message: "Failed to authenticate user"})
 		return api.StatusBadRequest(err)
 	}
 
@@ -69,11 +65,12 @@ func GetTask(ctx context.Context, request events.APIGatewayProxyRequest) (*event
 	user_id := request.Headers["user_id"]
 	if user_id == "" {
 		err := errors.New("user_id is not set")
+		logger.Error(err, &logger.Logs{Code: "GetTask", Message: err.Error()})
 
-		logger.Error(err, &logger.Logs{Code: "TaskRequestHeaderError", Message: err.Error()})
 		return api.StatusBadRequest(err)
 	}
 
+	// Get tasks with specific status
 	if len(status) > 0 {
 		// Convert status string to int
 		taskStatus, err := strconv.Atoi(status)
@@ -82,19 +79,22 @@ func GetTask(ctx context.Context, request events.APIGatewayProxyRequest) (*event
 		}
 
 		// Result will return a list of tasks base on status
-		result, err := models.FilterTasks(ctx, user_id, taskStatus, svc)
+		result, err := models.FilterTasks(ctx, user_id, taskStatus)
 		if err != nil {
+			logger.Error(err, &logger.Logs{Code: "GetTask", Message: "Failed to FilterTasks"},
+				logger.KVP{Key: "user_id", Value: user_id}, logger.KVP{Key: "status", Value: models.StatusMap[taskStatus]})
 			return api.StatusBadRequest(err)
 		}
 
 		return api.Response(http.StatusOK, result)
 	}
 
+	// Get specific task information
 	if len(taskID) > 0 {
 		// Result will return the specific task details
-		result, err := models.GetTask(ctx, taskID, svc)
+		result, err := models.GetTask(ctx, taskID)
 		if err != nil {
-			logger.Error(err, &logger.Logs{Code: "DynamoDBError", Message: "Failed to fetch tasks"})
+			logger.Error(err, &logger.Logs{Code: "GetTask", Message: "Failed to get task"}, logger.KVP{Key: "task_id", Value: taskID})
 			return api.StatusBadRequest(err)
 		}
 
@@ -102,9 +102,9 @@ func GetTask(ctx context.Context, request events.APIGatewayProxyRequest) (*event
 	}
 
 	// Result will return the whole list of tasks
-	result, err := models.FetchTasks(ctx, user_id, svc)
+	result, err := models.FetchTasks(ctx, user_id)
 	if err != nil {
-		logger.Error(err, &logger.Logs{Code: "DynamoDBError", Message: "Failed to fetch tasks"})
+		logger.Error(err, &logger.Logs{Code: "GetTask", Message: "Failed to fetch tasks"}, logger.KVP{Key: "user_id", Value: user_id})
 		return api.StatusBadRequest(err)
 	}
 
