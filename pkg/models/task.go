@@ -410,18 +410,20 @@ func DeleteUserTasks(ctx context.Context, user_id string) (*events.APIGatewayPro
 	}
 
 	// Loop over the tasks the user has and delete one by one
-	for _, task := range *tasks {
-		builder.KeyAttribute = map[string]types.AttributeValue{
-			"id": &types.AttributeValueMemberS{
-				Value: task.TaskID,
-			},
-		}
+	if tasks != nil {
+		for _, task := range *tasks {
+			builder.KeyAttribute = map[string]types.AttributeValue{
+				"id": &types.AttributeValueMemberS{
+					Value: task.TaskID,
+				},
+			}
 
-		// Deletes all tasks related to the user account
-		_, err = service.DynamoDeleteItem(ctx, builder)
-		if err != nil {
-			logger.Error(err, &logger.Logs{Code: "DeleteUserTasks", Message: "Failed to delete all tasks"})
-			return api.StatusBadRequest(err)
+			// Deletes all tasks related to the user account
+			_, err = service.DynamoDeleteItem(ctx, builder)
+			if err != nil {
+				logger.Error(err, &logger.Logs{Code: "DeleteUserTasks", Message: "Failed to delete all tasks"})
+				return api.StatusBadRequest(err)
+			}
 		}
 	}
 
