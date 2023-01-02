@@ -7,5 +7,5 @@ node_modules
 .cdk.staging
 cdk.out
 
-# Exclude web_app folder
-!web_app/assets/
+# Exclude web_app/assets/js/ folder
+!web_app/assets/js/*
