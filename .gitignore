@@ -8,4 +8,4 @@ node_modules
 cdk.out
 
 # Include web_app/assets/js/ folder
-!web_app/assets/js/
+!web_app/assets/js/*
